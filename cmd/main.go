@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"be-logbook-ppds/app/auth"
+	"be-logbook-ppds/app/jadwal"
 	"be-logbook-ppds/app/user"
 	"be-logbook-ppds/configs"
 	"be-logbook-ppds/middleware"
@@ -30,6 +31,10 @@ func main() {
 	authService := auth.NewService(userRepo, cfg)
 	authHandler := auth.NewHandler(authService)
 
+	jadwalRepo := jadwal.NewRepository(db)
+	jadwalService := jadwal.NewService(jadwalRepo)
+	jadwalHandler := jadwal.NewHandler(jadwalService)
+
 	// 4. Setup Router
 	r := gin.Default()
 
@@ -38,7 +43,7 @@ func main() {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, PATCH, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(24)
@@ -71,6 +76,23 @@ func main() {
 			userGroup.GET("/:id", userHandler.FindByID)
 			userGroup.PUT("/:id", userHandler.Update)
 			userGroup.DELETE("/:id", userHandler.Delete)
+		}
+
+		// Jadwal Management Endpoints
+		jadwalGroup := api.Group("/jadwals")
+		{
+			// Public / Protected List Events for FullCalendar
+			jadwalGroup.GET("", jadwalHandler.GetEvents)
+
+			// Edit / Create / Delete Operations (Restricted to supervisor & superadmin)
+			protectedJadwal := jadwalGroup.Group("")
+			protectedJadwal.Use(middleware.JWTMiddleware(cfg.JWTSecret), middleware.RoleMiddleware("supervisor", "superadmin"))
+			{
+				protectedJadwal.POST("", jadwalHandler.Create)
+				protectedJadwal.PUT("/:id", jadwalHandler.Update)
+				protectedJadwal.PATCH("/:id/dates", jadwalHandler.UpdateDates)
+				protectedJadwal.DELETE("/:id", jadwalHandler.Delete)
+			}
 		}
 	}
 

@@ -51,6 +51,20 @@ func RunMigrations(db *sqlx.DB) error {
 		}
 	}
 
+	upSQL3, err := os.ReadFile("migrations/000003_create_jadwals_table.up.sql")
+	if err == nil && len(upSQL3) > 0 {
+		if _, err := db.Exec(string(upSQL3)); err != nil {
+			log.Printf("Migration 3 execution note: %v", err)
+		}
+	}
+
+	upSQL4, err := os.ReadFile("migrations/000004_seed_jadwals.up.sql")
+	if err == nil && len(upSQL4) > 0 {
+		if _, err := db.Exec(string(upSQL4)); err != nil {
+			log.Printf("Migration 4 execution note: %v", err)
+		}
+	}
+
 	log.Println("Database migration & seed sync completed successfully")
 	return nil
 }

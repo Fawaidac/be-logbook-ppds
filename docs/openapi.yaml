@@ -209,6 +209,182 @@ paths:
         '200':
           description: User Deleted Successfully
 
+  /api/v1/jadwals:
+    get:
+      summary: Get FullCalendar Schedule Events
+      description: Get schedule events filtered by start, end date, or type (jaga, bimbingan, rotasi, ujian).
+      tags:
+        - Jadwal Management
+      parameters:
+        - in: query
+          name: start
+          schema:
+            type: string
+          example: '2026-08-01'
+        - in: query
+          name: end
+          schema:
+            type: string
+          example: '2026-08-31'
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [all, jaga, bimbingan, rotasi, ujian]
+          example: all
+      responses:
+        '200':
+          description: Array of FullCalendar Events
+
+    post:
+      summary: Create Schedule Event (Supervisor & Super Admin Only)
+      tags:
+        - Jadwal Management
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - start
+                - end
+                - type
+              properties:
+                title:
+                  type: string
+                  example: Jaga Malam IGD Shift 2
+                description:
+                  type: string
+                  example: Menjaga pasien IGD bersama tim 2
+                location:
+                  type: string
+                  example: Ruang IGD RSUD
+                start:
+                  type: string
+                  example: '2026-08-25 20:00:00'
+                end:
+                  type: string
+                  example: '2026-08-26 08:00:00'
+                all_day:
+                  type: boolean
+                  example: false
+                type:
+                  type: string
+                  enum: [jaga, bimbingan, rotasi, ujian]
+                  example: jaga
+      responses:
+        '200':
+          description: Event Created Successfully
+
+  /api/v1/jadwals/{id}:
+    put:
+      summary: Update Schedule Event (Supervisor & Super Admin Only)
+      tags:
+        - Jadwal Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - start
+                - end
+                - type
+              properties:
+                title:
+                  type: string
+                  example: Jaga Malam IGD Shift 1 Update
+                description:
+                  type: string
+                  example: Deskripsi perbaikan
+                location:
+                  type: string
+                  example: IGD Gedung Utama
+                start:
+                  type: string
+                  example: '2026-08-25 20:00:00'
+                end:
+                  type: string
+                  example: '2026-08-26 08:00:00'
+                all_day:
+                  type: boolean
+                  example: false
+                type:
+                  type: string
+                  example: jaga
+      responses:
+        '200':
+          description: Event Updated Successfully
+
+    delete:
+      summary: Delete Schedule Event (Supervisor & Super Admin Only)
+      tags:
+        - Jadwal Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Event Deleted Successfully
+
+  /api/v1/jadwals/{id}/dates:
+    patch:
+      summary: Update Schedule Dates for Drag & Drop (Supervisor & Super Admin Only)
+      tags:
+        - Jadwal Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - start
+                - end
+              properties:
+                start:
+                  type: string
+                  example: '2026-08-26 20:00:00'
+                end:
+                  type: string
+                  example: '2026-08-27 08:00:00'
+                all_day:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Event Dates Updated Successfully
+
 components:
   securitySchemes:
     BearerAuth:

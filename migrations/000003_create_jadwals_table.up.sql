@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS jadwals (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    location VARCHAR(255),
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    all_day BOOLEAN DEFAULT FALSE,
+    type VARCHAR(50) DEFAULT 'jaga',
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
