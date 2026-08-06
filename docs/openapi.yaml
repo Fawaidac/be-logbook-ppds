@@ -31,18 +31,18 @@ paths:
                   type: string
                   example: residen01
       responses:
-        '200':
+        "200":
           description: Login Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginSuccessResponse'
-        '401':
+                $ref: "#/components/schemas/LoginSuccessResponse"
+        "401":
           description: Invalid Credentials
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/auth/logout:
     post:
@@ -50,7 +50,7 @@ paths:
       tags:
         - Authentication
       responses:
-        '200':
+        "200":
           description: Logout Success
 
   /api/v1/auth/me:
@@ -61,13 +61,13 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Profile Details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '401':
+                $ref: "#/components/schemas/StandardResponse"
+        "401":
           description: Unauthorized
 
   /api/v1/users:
@@ -78,13 +78,13 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of Users
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '403':
+                $ref: "#/components/schemas/StandardResponse"
+        "403":
           description: Forbidden - Insufficient Role
 
     post:
@@ -126,7 +126,7 @@ paths:
                   type: string
                   example: Residen Bedah Th.1
       responses:
-        '201':
+        "201":
           description: User Created Successfully
 
   /api/v1/users/{id}:
@@ -144,9 +144,9 @@ paths:
             type: integer
           example: 1
       responses:
-        '200':
+        "200":
           description: User Details
-        '404':
+        "404":
           description: User Not Found
 
     put:
@@ -189,7 +189,7 @@ paths:
                   type: string
                   example: DPJP Bedah Umum
       responses:
-        '200':
+        "200":
           description: User Updated Successfully
 
     delete:
@@ -206,7 +206,7 @@ paths:
             type: integer
           example: 2
       responses:
-        '200':
+        "200":
           description: User Deleted Successfully
 
   /api/v1/jadwals:
@@ -215,17 +215,19 @@ paths:
       description: Get schedule events filtered by start, end date, or type (jaga, bimbingan, rotasi, ujian).
       tags:
         - Jadwal Management
+      security:
+        - BearerAuth: []
       parameters:
         - in: query
           name: start
           schema:
             type: string
-          example: '2026-08-01'
+          example: "2026-08-01"
         - in: query
           name: end
           schema:
             type: string
-          example: '2026-08-31'
+          example: "2026-08-31"
         - in: query
           name: type
           schema:
@@ -233,7 +235,7 @@ paths:
             enum: [all, jaga, bimbingan, rotasi, ujian]
           example: all
       responses:
-        '200':
+        "200":
           description: Array of FullCalendar Events
 
     post:
@@ -265,10 +267,10 @@ paths:
                   example: Ruang IGD RSUD
                 start:
                   type: string
-                  example: '2026-08-25 20:00:00'
+                  example: "2026-08-25 20:00:00"
                 end:
                   type: string
-                  example: '2026-08-26 08:00:00'
+                  example: "2026-08-26 08:00:00"
                 all_day:
                   type: boolean
                   example: false
@@ -277,7 +279,7 @@ paths:
                   enum: [jaga, bimbingan, rotasi, ujian]
                   example: jaga
       responses:
-        '200':
+        "200":
           description: Event Created Successfully
 
   /api/v1/jadwals/{id}:
@@ -317,10 +319,10 @@ paths:
                   example: IGD Gedung Utama
                 start:
                   type: string
-                  example: '2026-08-25 20:00:00'
+                  example: "2026-08-25 20:00:00"
                 end:
                   type: string
-                  example: '2026-08-26 08:00:00'
+                  example: "2026-08-26 08:00:00"
                 all_day:
                   type: boolean
                   example: false
@@ -328,7 +330,7 @@ paths:
                   type: string
                   example: jaga
       responses:
-        '200':
+        "200":
           description: Event Updated Successfully
 
     delete:
@@ -345,7 +347,7 @@ paths:
             type: integer
           example: 1
       responses:
-        '200':
+        "200":
           description: Event Deleted Successfully
 
   /api/v1/jadwals/{id}/dates:
@@ -374,15 +376,15 @@ paths:
               properties:
                 start:
                   type: string
-                  example: '2026-08-26 20:00:00'
+                  example: "2026-08-26 20:00:00"
                 end:
                   type: string
-                  example: '2026-08-27 08:00:00'
+                  example: "2026-08-27 08:00:00"
                 all_day:
                   type: boolean
                   example: false
       responses:
-        '200':
+        "200":
           description: Event Dates Updated Successfully
 
 components:

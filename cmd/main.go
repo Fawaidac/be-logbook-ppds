@@ -63,6 +63,7 @@ func main() {
 			protected := authGroup.Group("")
 			protected.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 			{
+				protected.POST("/logout", authHandler.Logout)
 				protected.GET("/me", authHandler.Me)
 			}
 		}
@@ -80,13 +81,15 @@ func main() {
 
 		// Jadwal Management Endpoints
 		jadwalGroup := api.Group("/jadwals")
+		// 1. Semua endpoint di bawah /jadwals wajib lulus JWTMiddleware
+		jadwalGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 		{
-			// Public / Protected List Events for FullCalendar
+			// GET dapat diakses oleh semua user yang memiliki token JWT valid
 			jadwalGroup.GET("", jadwalHandler.GetEvents)
 
-			// Edit / Create / Delete Operations (Restricted to supervisor & superadmin)
+			// 2. Sub-group khusus yang dibatasi untuk role 'supervisor' & 'superadmin'
 			protectedJadwal := jadwalGroup.Group("")
-			protectedJadwal.Use(middleware.JWTMiddleware(cfg.JWTSecret), middleware.RoleMiddleware("supervisor", "superadmin"))
+			protectedJadwal.Use(middleware.RoleMiddleware("supervisor", "superadmin"))
 			{
 				protectedJadwal.POST("", jadwalHandler.Create)
 				protectedJadwal.PUT("/:id", jadwalHandler.Update)
