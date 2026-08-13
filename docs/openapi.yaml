@@ -387,6 +387,413 @@ paths:
         "200":
           description: Event Dates Updated Successfully
 
+  /api/v1/tindakans:
+    get:
+      summary: Get Logbook Summary & Tindakan Entries
+      description: Get rekap statistik logbook (total, mandiri, dibimbing, observasi, disetujui, percent) and list of procedure entries.
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logbook Summary & Entries List
+
+    post:
+      summary: Create New Tindakan (Draft)
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mr_number
+                - patient_name
+                - diagnosis_label
+                - plan_procedure
+              properties:
+                mr_number:
+                  type: string
+                  example: RM-88406
+                visit_date:
+                  type: string
+                  example: '2026-08-07'
+                patient_name:
+                  type: string
+                  example: Tn. Ahmad Hidayat
+                gender:
+                  type: string
+                  enum: [L, P]
+                  example: L
+                birth_date:
+                  type: string
+                  example: '1992-05-15'
+                division:
+                  type: string
+                  example: Trauma Muskoloskeletal
+                diagnosis_label:
+                  type: string
+                  example: Fraktur Femur Dekstra
+                procedure_code:
+                  type: string
+                  example: ORIF-PLT-01
+                plan_procedure:
+                  type: string
+                  example: ORIF Plating Femur
+                activity:
+                  type: string
+                  example: Bedah Sentral (OK)
+                procedure_date:
+                  type: string
+                  example: '2026-08-07'
+                room_label:
+                  type: string
+                  example: OK 2 Central
+                role_label:
+                  type: string
+                  example: Operator Utama
+                kemandirian:
+                  type: string
+                  enum: [mandiri, dibimbing, observasi]
+                  example: mandiri
+                clinical_note:
+                  type: string
+                  example: Reduksi anatomis sukses
+                supervisor_name:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+      responses:
+        '201':
+          description: Tindakan Draft Created Successfully
+
+  /api/v1/tindakans/{id}:
+    get:
+      summary: Get Single Tindakan Detail
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Tindakan Detail
+
+    put:
+      summary: Update Tindakan
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mr_number
+                - patient_name
+                - plan_procedure
+              properties:
+                mr_number:
+                  type: string
+                  example: RM-88406
+                patient_name:
+                  type: string
+                  example: Tn. Ahmad Hidayat
+                plan_procedure:
+                  type: string
+                  example: ORIF Plating Femur Update
+                diagnosis_label:
+                  type: string
+                  example: Fraktur Femur Update
+                room_label:
+                  type: string
+                  example: OK 1
+                clinical_note:
+                  type: string
+                  example: Catatan perbaikan
+      responses:
+        '200':
+          description: Tindakan Updated Successfully
+
+    delete:
+      summary: Delete Tindakan
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Tindakan Deleted Successfully
+
+  /api/v1/tindakans/{id}/send:
+    post:
+      summary: Send Tindakan to DPJP Approval (draft -> menunggu)
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 4
+      responses:
+        '200':
+          description: Sent to DPJP for Verification Successfully
+
+  /api/v1/kegiatan-ilmiah:
+    get:
+      summary: Get Kegiatan Ilmiah (Grouped by Kategori)
+      description: Get all kegiatan ilmiah entries grouped by kategori (simposium, workshop, multidisiplin, ilmiah_lain)
+      tags:
+        - Kegiatan Ilmiah
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Kegiatan Ilmiah Grouped by Kategori
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+
+    post:
+      summary: Create New Kegiatan Ilmiah
+      description: Create kegiatan ilmiah. user_username, program_studi, ppds_name, nim_nip diambil dari session user yang login.
+      tags:
+        - Kegiatan Ilmiah
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - kategori
+                - jenis_kegiatan
+                - topik
+              properties:
+                kategori:
+                  type: string
+                  enum: [simposium, workshop, multidisiplin, ilmiah_lain]
+                  example: simposium
+                jenis_kegiatan:
+                  type: string
+                  example: Seminar Nasional Ilmiah
+                topik:
+                  type: string
+                  example: Perkembangan Terbaru Oftalmologi
+                tanggal_mulai:
+                  type: string
+                  example: '2026-08-15'
+                tanggal_selesai:
+                  type: string
+                  example: '2026-08-16'
+                lokasi_tipe:
+                  type: string
+                  enum: [rsds_fk_unair, luar_rsds_fk_unair]
+                  example: rsds_fk_unair
+                lokasi_detail:
+                  type: string
+                  example: Ruang Auditorium RSUD dr. Soebandi
+                sebagai:
+                  type: string
+                  example: Peserta / Pembicara
+                pembimbing_1:
+                  type: string
+                  example: dr. Bambang Prasetyo, Sp.M
+                pembimbing_2:
+                  type: string
+                  example: dr. Siti Rahma, Sp.M
+                pembimbing_3:
+                  type: string
+                pembimbing_4:
+                  type: string
+                pembimbing_5:
+                  type: string
+                penguji_1:
+                  type: string
+                penguji_2:
+                  type: string
+                penguji_3:
+                  type: string
+                penguji_4:
+                  type: string
+                penguji_5:
+                  type: string
+                deskripsi:
+                  type: string
+                  example: Deskripsi kegiatan ilmiah
+      responses:
+        '201':
+          description: Kegiatan Ilmiah Created Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  kegiatan:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      user_username:
+                        type: string
+                      program_studi:
+                        type: string
+                      ppds_name:
+                        type: string
+                      nim_nip:
+                        type: string
+                      kategori:
+                        type: string
+                      jenis_kegiatan:
+                        type: string
+                      topik:
+                        type: string
+                      status:
+                        type: string
+                        enum: [pending, disetujui, ditolak]
+
+  /api/v1/kegiatan-ilmiah/{id}:
+    delete:
+      summary: Delete Kegiatan Ilmiah
+      tags:
+        - Kegiatan Ilmiah
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Kegiatan Ilmiah Deleted Successfully
+
+  /api/v1/bimbingans:
+    get:
+      summary: Get All Bimbingan Penelitian
+      description: Get list of all bimbingan penelitian sessions
+      tags:
+        - Bimbingan Penelitian
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of Bimbingan Penelitian
+
+    post:
+      summary: Create New Bimbingan Penelitian
+      description: Create bimbingan penelitian. user_username diambil dari session user yang login.
+      tags:
+        - Bimbingan Penelitian
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tahap
+                - topik_bimbingan
+                - pembimbing
+                - catatan_pembimbing
+              properties:
+                tahap:
+                  type: string
+                  example: Proposal / Metodologi
+                topik_bimbingan:
+                  type: string
+                  example: Pemilihan topik penelitian dan metodologi
+                pembimbing:
+                  type: string
+                  example: dr. Hendra Wijaya, M.Kes
+                catatan_pembimbing:
+                  type: string
+                  example: Topik sudah sesuai, lanjutkan ke tahap berikutnya
+      responses:
+        '201':
+          description: Bimbingan Penelitian Created Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  bimbingan:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      user_username:
+                        type: string
+                      sesi_ke:
+                        type: string
+                      tahap:
+                        type: string
+                      topik_bimbingan:
+                        type: string
+                      pembimbing:
+                        type: string
+                      catatan_pembimbing:
+                        type: string
+                      status_acc:
+                        type: string
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+
 components:
   securitySchemes:
     BearerAuth:

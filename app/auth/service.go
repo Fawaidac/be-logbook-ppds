@@ -6,6 +6,7 @@ import (
 
 	"be-logbook-ppds/app/user"
 	"be-logbook-ppds/configs"
+	"be-logbook-ppds/pkg/utils"
 )
 
 type Service interface {
@@ -59,8 +60,9 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 		jabatan = demo.Jabatan
 		storedPassword = demo.Password
 	}
-	// 3. Verifikasi password (dukung bcrypt hash & plain text)
-	if storedPassword != req.Password {
+	// 3. Verifikasi password (bcrypt hash dengan fallback plain-text)
+	errBcrypt := utils.CheckPassword(storedPassword, req.Password)
+	if errBcrypt != nil && storedPassword != req.Password {
 		return nil, errors.New("Username atau password salah")
 	}
 

@@ -5,6 +5,8 @@ import (
 
 	"be-logbook-ppds/app/auth"
 	"be-logbook-ppds/app/jadwal"
+	"be-logbook-ppds/app/kegiatan_ilmiah"
+	"be-logbook-ppds/app/tindakan"
 	"be-logbook-ppds/app/user"
 	"be-logbook-ppds/configs"
 	"be-logbook-ppds/middleware"
@@ -35,6 +37,15 @@ func main() {
 	jadwalService := jadwal.NewService(jadwalRepo)
 	jadwalHandler := jadwal.NewHandler(jadwalService)
 
+	tindakanRepo := tindakan.NewRepository(db)
+	tindakanService := tindakan.NewService(tindakanRepo)
+	tindakanHandler := tindakan.NewHandler(tindakanService)
+
+	kegiatanRepo := kegiatan_ilmiah.NewRepository(db)
+	bimbinganRepo := kegiatan_ilmiah.NewBimbinganRepository(db)
+	kegiatanService := kegiatan_ilmiah.NewService(kegiatanRepo, bimbinganRepo)
+	kegiatanHandler := kegiatan_ilmiah.NewHandler(kegiatanService)
+
 	// 4. Setup Router
 	r := gin.Default()
 
@@ -58,7 +69,6 @@ func main() {
 		authGroup := api.Group("/auth")
 		{
 			authGroup.POST("/login", authHandler.Login)
-			authGroup.POST("/logout", authHandler.Logout)
 
 			protected := authGroup.Group("")
 			protected.Use(middleware.JWTMiddleware(cfg.JWTSecret))
@@ -96,6 +106,34 @@ func main() {
 				protectedJadwal.PATCH("/:id/dates", jadwalHandler.UpdateDates)
 				protectedJadwal.DELETE("/:id", jadwalHandler.Delete)
 			}
+		}
+
+		// Tindakan Logbook Endpoints
+		tindakanGroup := api.Group("/tindakans")
+		tindakanGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			tindakanGroup.GET("", tindakanHandler.GetSummary)
+			tindakanGroup.GET("/:id", tindakanHandler.GetByID)
+			tindakanGroup.POST("", tindakanHandler.Create)
+			tindakanGroup.PUT("/:id", tindakanHandler.Update)
+			tindakanGroup.POST("/:id/send", tindakanHandler.Send)
+			tindakanGroup.DELETE("/:id", tindakanHandler.Delete)
+		}
+
+		// Kegiatan Ilmiah & Bimbingan Penelitian Endpoints
+		kegiatanGroup := api.Group("/kegiatan-ilmiah")
+		kegiatanGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			kegiatanGroup.GET("", kegiatanHandler.GetIndex)
+			kegiatanGroup.POST("", kegiatanHandler.Create)
+			kegiatanGroup.DELETE("/:id", kegiatanHandler.Delete)
+		}
+
+		bimbinganGroup := api.Group("/bimbingans")
+		bimbinganGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			bimbinganGroup.GET("", kegiatanHandler.GetBimbinganIndex)
+			bimbinganGroup.POST("", kegiatanHandler.CreateBimbingan)
 		}
 	}
 

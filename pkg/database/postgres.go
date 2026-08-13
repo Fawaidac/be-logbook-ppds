@@ -65,6 +65,20 @@ func RunMigrations(db *sqlx.DB) error {
 		}
 	}
 
+	upSQL5, err := os.ReadFile("migrations/000005_create_tindakans_table.up.sql")
+	if err == nil && len(upSQL5) > 0 {
+		if _, err := db.Exec(string(upSQL5)); err != nil {
+			log.Printf("Migration 5 execution note: %v", err)
+		}
+	}
+
+	upSQL6, err := os.ReadFile("migrations/000006_seed_tindakans.up.sql")
+	if err == nil && len(upSQL6) > 0 {
+		if _, err := db.Exec(string(upSQL6)); err != nil {
+			log.Printf("Migration 6 execution note: %v", err)
+		}
+	}
+
 	log.Println("Database migration & seed sync completed successfully")
 	return nil
 }
