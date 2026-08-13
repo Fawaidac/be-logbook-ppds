@@ -14,7 +14,7 @@ type Jadwal struct {
 	EndTime     time.Time      `db:"end_time" json:"end_time"`
 	AllDay      bool           `db:"all_day" json:"all_day"`
 	Type        string         `db:"type" json:"type"`
-	UserID      sql.NullInt64  `db:"user_id" json:"user_id"`
+	UserUsername sql.NullString `db:"user_username" json:"user_username"`
 	CreatedAt   time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt   time.Time      `db:"updated_at" json:"updated_at"`
 }

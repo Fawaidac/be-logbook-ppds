@@ -9,7 +9,7 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, req CreateJadwalRequest, userID int) (*EventResponse, error)
+	Create(ctx context.Context, req CreateJadwalRequest, username string) (*EventResponse, error)
 	GetEvents(ctx context.Context, startStr, endStr, typeStr string) ([]EventResponse, error)
 	Update(ctx context.Context, id int, req UpdateJadwalRequest) (*EventResponse, error)
 	UpdateDates(ctx context.Context, id int, req UpdateDatesRequest) (*EventResponse, error)
@@ -54,7 +54,7 @@ func parseTime(timeStr string) (time.Time, error) {
 	return time.Parse("2006-01-02", timeStr)
 }
 
-func (s *service) Create(ctx context.Context, req CreateJadwalRequest, userID int) (*EventResponse, error) {
+func (s *service) Create(ctx context.Context, req CreateJadwalRequest, username string) (*EventResponse, error) {
 	startTime, err := parseTime(req.Start)
 	if err != nil {
 		return nil, errors.New("Format waktu 'start' tidak valid")
@@ -65,17 +65,14 @@ func (s *service) Create(ctx context.Context, req CreateJadwalRequest, userID in
 	}
 
 	j := &Jadwal{
-		Title:       req.Title,
-		Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
-		Location:    sql.NullString{String: req.Location, Valid: req.Location != ""},
-		StartTime:   startTime,
-		EndTime:     endTime,
-		AllDay:      req.AllDay,
-		Type:        req.Type,
-	}
-
-	if userID > 0 {
-		j.UserID = sql.NullInt64{Int64: int64(userID), Valid: true}
+		Title:        req.Title,
+		Description:  sql.NullString{String: req.Description, Valid: req.Description != ""},
+		Location:     sql.NullString{String: req.Location, Valid: req.Location != ""},
+		StartTime:    startTime,
+		EndTime:      endTime,
+		AllDay:       req.AllDay,
+		Type:         req.Type,
+		UserUsername: sql.NullString{String: username, Valid: username != ""},
 	}
 
 	if err := s.repo.Create(ctx, j); err != nil {
@@ -171,11 +168,6 @@ func (s *service) Delete(ctx context.Context, id int) error {
 }
 
 func (s *service) toEventResponse(j *Jadwal) *EventResponse {
-	userID := 0
-	if j.UserID.Valid {
-		userID = int(j.UserID.Int64)
-	}
-
 	return &EventResponse{
 		ID:          fmt.Sprintf("%d", j.ID),
 		Title:       j.Title,
@@ -186,6 +178,6 @@ func (s *service) toEventResponse(j *Jadwal) *EventResponse {
 		AllDay:      j.AllDay,
 		ClassName:   getEventClassName(j.Type),
 		Type:        j.Type,
-		UserID:      userID,
+		UserID:      0,
 	}
 }

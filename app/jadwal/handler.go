@@ -38,14 +38,14 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	userID := 0
-	if val, exists := c.Get("user_id"); exists {
-		if id, ok := val.(int); ok {
-			userID = id
+	username := ""
+	if val, exists := c.Get("username"); exists {
+		if u, ok := val.(string); ok {
+			username = u
 		}
 	}
 
-	event, err := h.service.Create(c.Request.Context(), req, userID)
+	event, err := h.service.Create(c.Request.Context(), req, username)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return

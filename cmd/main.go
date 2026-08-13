@@ -80,7 +80,7 @@ func main() {
 
 		// User Management CRUD (Khusus role superadmin)
 		userGroup := api.Group("/users")
-		userGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret), middleware.RoleMiddleware("superadmin"))
+		userGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret), middleware.RoleMiddleware("admin"))
 		{
 			userGroup.POST("", userHandler.Create)
 			userGroup.GET("", userHandler.FindAll)
@@ -97,9 +97,8 @@ func main() {
 			// GET dapat diakses oleh semua user yang memiliki token JWT valid
 			jadwalGroup.GET("", jadwalHandler.GetEvents)
 
-			// 2. Sub-group khusus yang dibatasi untuk role 'supervisor' & 'superadmin'
 			protectedJadwal := jadwalGroup.Group("")
-			protectedJadwal.Use(middleware.RoleMiddleware("supervisor", "superadmin"))
+			protectedJadwal.Use(middleware.RoleMiddleware("supervisor", "admin"))
 			{
 				protectedJadwal.POST("", jadwalHandler.Create)
 				protectedJadwal.PUT("/:id", jadwalHandler.Update)

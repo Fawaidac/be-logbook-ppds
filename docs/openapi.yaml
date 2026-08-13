@@ -239,7 +239,7 @@ paths:
           description: Array of FullCalendar Events
 
     post:
-      summary: Create Schedule Event (Supervisor & Super Admin Only)
+      summary: Create Schedule Event
       tags:
         - Jadwal Management
       security:
@@ -284,7 +284,7 @@ paths:
 
   /api/v1/jadwals/{id}:
     put:
-      summary: Update Schedule Event (Supervisor & Super Admin Only)
+      summary: Update Schedule Event
       tags:
         - Jadwal Management
       security:
@@ -334,7 +334,7 @@ paths:
           description: Event Updated Successfully
 
     delete:
-      summary: Delete Schedule Event (Supervisor & Super Admin Only)
+      summary: Delete Schedule Event
       tags:
         - Jadwal Management
       security:
@@ -352,7 +352,7 @@ paths:
 
   /api/v1/jadwals/{id}/dates:
     patch:
-      summary: Update Schedule Dates for Drag & Drop (Supervisor & Super Admin Only)
+      summary: Update Schedule Dates for Drag & Drop
       tags:
         - Jadwal Management
       security:
@@ -396,7 +396,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Logbook Summary & Entries List
 
     post:
@@ -422,7 +422,7 @@ paths:
                   example: RM-88406
                 visit_date:
                   type: string
-                  example: '2026-08-07'
+                  example: "2026-08-07"
                 patient_name:
                   type: string
                   example: Tn. Ahmad Hidayat
@@ -432,7 +432,7 @@ paths:
                   example: L
                 birth_date:
                   type: string
-                  example: '1992-05-15'
+                  example: "1992-05-15"
                 division:
                   type: string
                   example: Trauma Muskoloskeletal
@@ -450,7 +450,7 @@ paths:
                   example: Bedah Sentral (OK)
                 procedure_date:
                   type: string
-                  example: '2026-08-07'
+                  example: "2026-08-07"
                 room_label:
                   type: string
                   example: OK 2 Central
@@ -468,7 +468,7 @@ paths:
                   type: string
                   example: dr. Andi Wijaya, Sp.OT
       responses:
-        '201':
+        "201":
           description: Tindakan Draft Created Successfully
 
   /api/v1/tindakans/{id}:
@@ -486,7 +486,7 @@ paths:
             type: integer
           example: 1
       responses:
-        '200':
+        "200":
           description: Tindakan Detail
 
     put:
@@ -532,7 +532,7 @@ paths:
                   type: string
                   example: Catatan perbaikan
       responses:
-        '200':
+        "200":
           description: Tindakan Updated Successfully
 
     delete:
@@ -549,7 +549,7 @@ paths:
             type: integer
           example: 1
       responses:
-        '200':
+        "200":
           description: Tindakan Deleted Successfully
 
   /api/v1/tindakans/{id}/send:
@@ -567,7 +567,7 @@ paths:
             type: integer
           example: 4
       responses:
-        '200':
+        "200":
           description: Sent to DPJP for Verification Successfully
 
   /api/v1/kegiatan-ilmiah:
@@ -579,7 +579,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Kegiatan Ilmiah Grouped by Kategori
           content:
             application/json:
@@ -623,10 +623,10 @@ paths:
                   example: Perkembangan Terbaru Oftalmologi
                 tanggal_mulai:
                   type: string
-                  example: '2026-08-15'
+                  example: "2026-08-15"
                 tanggal_selesai:
                   type: string
-                  example: '2026-08-16'
+                  example: "2026-08-16"
                 lokasi_tipe:
                   type: string
                   enum: [rsds_fk_unair, luar_rsds_fk_unair]
@@ -663,7 +663,7 @@ paths:
                   type: string
                   example: Deskripsi kegiatan ilmiah
       responses:
-        '201':
+        "201":
           description: Kegiatan Ilmiah Created Successfully
           content:
             application/json:
@@ -712,7 +712,7 @@ paths:
             type: integer
           example: 1
       responses:
-        '200':
+        "200":
           description: Kegiatan Ilmiah Deleted Successfully
 
   /api/v1/bimbingans:
@@ -724,7 +724,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of Bimbingan Penelitian
 
     post:
@@ -759,7 +759,7 @@ paths:
                   type: string
                   example: Topik sudah sesuai, lanjutkan ke tahap berikutnya
       responses:
-        '201':
+        "201":
           description: Bimbingan Penelitian Created Successfully
           content:
             application/json:

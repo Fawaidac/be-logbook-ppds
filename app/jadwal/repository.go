@@ -27,17 +27,17 @@ func NewRepository(db *sqlx.DB) Repository {
 
 func (r *repository) Create(ctx context.Context, j *Jadwal) error {
 	query := `
-		INSERT INTO jadwals (title, description, location, start_time, end_time, all_day, type, user_id, updated_at)
+		INSERT INTO jadwals (title, description, location, start_time, end_time, all_day, type, user_username, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
 		RETURNING id, created_at, updated_at`
 	return r.db.QueryRowContext(ctx, query,
-		j.Title, j.Description, j.Location, j.StartTime, j.EndTime, j.AllDay, j.Type, j.UserID,
+		j.Title, j.Description, j.Location, j.StartTime, j.EndTime, j.AllDay, j.Type, j.UserUsername,
 	).Scan(&j.ID, &j.CreatedAt, &j.UpdatedAt)
 }
 
 func (r *repository) FindAll(ctx context.Context, startFilter, endFilter time.Time, typeFilter string) ([]Jadwal, error) {
 	var list []Jadwal
-	query := `SELECT id, title, description, location, start_time, end_time, all_day, type, user_id, created_at, updated_at FROM jadwals WHERE 1=1`
+	query := `SELECT id, title, description, location, start_time, end_time, all_day, type, user_username, created_at, updated_at FROM jadwals WHERE 1=1`
 	args := []interface{}{}
 	argIdx := 1
 
@@ -68,7 +68,7 @@ func (r *repository) FindAll(ctx context.Context, startFilter, endFilter time.Ti
 
 func (r *repository) FindByID(ctx context.Context, id int) (*Jadwal, error) {
 	var j Jadwal
-	query := `SELECT id, title, description, location, start_time, end_time, all_day, type, user_id, created_at, updated_at FROM jadwals WHERE id = $1`
+	query := `SELECT id, title, description, location, start_time, end_time, all_day, type, user_username, created_at, updated_at FROM jadwals WHERE id = $1`
 	err := r.db.GetContext(ctx, &j, query, id)
 	if err != nil {
 		return nil, err
