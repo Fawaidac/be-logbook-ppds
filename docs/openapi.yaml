@@ -794,6 +794,457 @@ paths:
                       updated_at:
                         type: string
 
+  /api/v1/pendidikan/kompetensi:
+    get:
+      summary: Get All Pendidikan Kompetensi
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of Kompetensi entries
+    post:
+      summary: Create Kompetensi Entry
+      description: Create kompetensi. user_username diambil dari session.
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - kode
+                - level_target
+                - achieved_log
+                - evaluator
+                - deskripsi
+              properties:
+                kode:
+                  type: string
+                  example: KMP-TRM-01
+                level_target:
+                  type: string
+                  example: Level 2
+                achieved_log:
+                  type: integer
+                  example: 8
+                evaluator:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+                deskripsi:
+                  type: string
+                  example: Debridement berhasil dilakukan
+      responses:
+        '201':
+          description: Kompetensi created successfully
+
+    delete:
+      summary: Delete Kompetensi
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Kompetensi deleted successfully
+
+  /api/v1/pendidikan/rotasi:
+    get:
+      summary: Get All Pendidikan Rotasi
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of Rotasi entries
+    post:
+      summary: Create Rotasi Entry
+      description: Create rotasi. user_username diambil dari session.
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shift:
+                  type: string
+                  example: Dinas Pagi
+                pembimbing:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+                catatan:
+                  type: string
+                  example: Presensi harian
+      responses:
+        '201':
+          description: Rotasi created successfully
+
+  /api/v1/pendidikan/mini-cex:
+    get:
+      summary: Get All Mini-CEX Entries
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of Mini-CEX entries
+    post:
+      summary: Create Mini-CEX Entry
+      description: Create mini-cex. user_username diambil dari session.
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pasien:
+                  type: string
+                  example: Pasien Baru
+                fokus:
+                  type: string
+                  example: Anamnesis & Pemfis
+                kasus:
+                  type: string
+                  example: Diagnosis Kasus
+                evaluator:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+                catatan:
+                  type: string
+                  example: Pengajuan ujian Mini-CEX
+      responses:
+        '201':
+          description: Mini-CEX created successfully
+
+  /api/v1/pendidikan/dops:
+    get:
+      summary: Get All DOPS Entries
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of DOPS entries
+    post:
+      summary: Create DOPS Entry
+      description: Create DOPS. user_username diambil dari session.
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prosedur:
+                  type: string
+                  example: Prosedur Medis
+                kesulitan:
+                  type: string
+                  example: Sedang (Medium)
+                supervisor:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+                catatan:
+                  type: string
+                  example: Pengajuan observasi DOPS
+      responses:
+        '201':
+          description: DOPS created successfully
+
+  /api/v1/pendidikan/seminar:
+    get:
+      summary: Get All Seminar Entries
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of Seminar entries
+    post:
+      summary: Create Seminar Entry
+      description: Create seminar. user_username diambil dari session.
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                judul:
+                  type: string
+                  example: Presentasi Ilmiah
+                jenis:
+                  type: string
+                  example: Journal Reading
+                narasumber:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+                catatan:
+                  type: string
+                  example: Ringkasan presentasi seminar
+      responses:
+        '201':
+          description: Seminar created successfully
+
+  /api/v1/pendidikan/cbd:
+    get:
+      summary: Get All Case Discussion (CBD) Entries
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of CBD entries
+    post:
+      summary: Create CBD Entry
+      description: Create case discussion. user_username diambil dari session.
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pasien:
+                  type: string
+                  example: Pasien Diskusi
+                topik:
+                  type: string
+                  example: Diskusi Kasus
+                kategori:
+                  type: string
+                  example: Trauma Muskoloskeletal
+                pembimbing:
+                  type: string
+                  example: dr. Andi Wijaya, Sp.OT
+                catatan:
+                  type: string
+                  example: Poin refleksi klinis
+      responses:
+        '201':
+          description: CBD created successfully
+
+  /api/v1/approval/menunggu:
+    get:
+      summary: Get Pending Approvals (menunggu)
+      description: Get list of items awaiting approval - Tindakan, Kegiatan Ilmiah, Aktivitas Klinik, Pendidikan Evaluasi
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of pending approvals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/ApprovalListResponse"
+
+  /api/v1/approval/disetujui:
+    get:
+      summary: Get Approved Items
+      description: Get list of approved items - Tindakan, Kegiatan Ilmiah, Aktivitas Klinik, Pendidikan Evaluasi
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of approved items
+
+  /api/v1/approval/ditolak:
+    get:
+      summary: Get Rejected Items
+      description: Get list of rejected items needing revision
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of rejected items
+
+  /api/v1/approval/tindakans/{id}/approve:
+    post:
+      summary: Approve Tindakan
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tindakan approved successfully
+
+  /api/v1/approval/tindakans/{id}/reject:
+    post:
+      summary: Reject Tindakan
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tindakan marked for revision
+
+  /api/v1/approval/kegiatan-ilmiah/{id}/approve:
+    post:
+      summary: Approve Kegiatan Ilmiah
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Kegiatan ilmiah approved successfully
+
+  /api/v1/approval/kegiatan-ilmiah/{id}/reject:
+    post:
+      summary: Reject Kegiatan Ilmiah
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Kegiatan ilmiah marked for revision
+
+  /api/v1/approval/aktivitas-klinik/{id}/approve:
+    post:
+      summary: Approve Aktivitas Klinik
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Aktivitas klinik approved successfully
+
+  /api/v1/approval/aktivitas-klinik/{id}/reject:
+    post:
+      summary: Reject Aktivitas Klinik
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Aktivitas klinik marked for revision
+
+  /api/v1/approval/pendidikan-evaluasi/{id}/approve:
+    post:
+      summary: Approve Pendidikan Evaluasi
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pendidikan evaluasi approved successfully
+
+  /api/v1/approval/pendidikan-evaluasi/{id}/reject:
+    post:
+      summary: Reject Pendidikan Evaluasi
+      tags:
+        - Approval
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pendidikan evaluasi marked for revision
+
 components:
   securitySchemes:
     BearerAuth:

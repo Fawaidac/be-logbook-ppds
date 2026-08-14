@@ -3,9 +3,11 @@ package main
 import (
 	"log"
 
+	"be-logbook-ppds/app/approval"
 	"be-logbook-ppds/app/auth"
 	"be-logbook-ppds/app/jadwal"
 	"be-logbook-ppds/app/kegiatan_ilmiah"
+	"be-logbook-ppds/app/pendidikan"
 	"be-logbook-ppds/app/tindakan"
 	"be-logbook-ppds/app/user"
 	"be-logbook-ppds/configs"
@@ -45,6 +47,35 @@ func main() {
 	bimbinganRepo := kegiatan_ilmiah.NewBimbinganRepository(db)
 	kegiatanService := kegiatan_ilmiah.NewService(kegiatanRepo, bimbinganRepo)
 	kegiatanHandler := kegiatan_ilmiah.NewHandler(kegiatanService)
+
+	kompetensiRepo := pendidikan.NewKompetensiRepository(db)
+	kompetensiService := pendidikan.NewKompetensiService(kompetensiRepo)
+
+	rotasiRepo := pendidikan.NewRotasiRepository(db)
+	rotasiService := pendidikan.NewRotasiService(rotasiRepo)
+
+	miniCexRepo := pendidikan.NewMiniCexRepository(db)
+	miniCexService := pendidikan.NewMiniCexService(miniCexRepo)
+
+	dopsRepo := pendidikan.NewDopsRepository(db)
+	dopsService := pendidikan.NewDopsService(dopsRepo)
+
+	seminarRepo := pendidikan.NewSeminarRepository(db)
+	seminarService := pendidikan.NewSeminarService(seminarRepo)
+
+	cbdRepo := pendidikan.NewCbdRepository(db)
+	cbdService := pendidikan.NewCbdService(cbdRepo)
+
+	pendidikanHandler := pendidikan.NewHandler(kompetensiService, rotasiService, miniCexService, dopsService, seminarService, cbdService)
+
+	// Approval Service - wraps existing repos
+	approvalTindakanRepo := &approval.TindakanRepoAdapter{DB: db}
+	approvalKegiatanRepo := &approval.KegiatanIlmiahRepoAdapter{DB: db}
+	approvalAktivitasRepo := &approval.AktivitasKlinikRepoAdapter{DB: db}
+	approvalPendidikanRepo := &approval.PendidikanEvaluasiRepoAdapter{DB: db}
+
+	approvalService := approval.NewService(approvalTindakanRepo, approvalKegiatanRepo, approvalAktivitasRepo, approvalPendidikanRepo)
+	approvalHandler := approval.NewHandler(approvalService)
 
 	// 4. Setup Router
 	r := gin.Default()
@@ -133,6 +164,80 @@ func main() {
 		{
 			bimbinganGroup.GET("", kegiatanHandler.GetBimbinganIndex)
 			bimbinganGroup.POST("", kegiatanHandler.CreateBimbingan)
+		}
+
+		// Pendidikan Endpoints
+		kompetensiGroup := api.Group("/pendidikan/kompetensi")
+		kompetensiGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			kompetensiGroup.GET("", pendidikanHandler.GetKompetensi)
+			kompetensiGroup.POST("", pendidikanHandler.CreateKompetensi)
+			kompetensiGroup.DELETE("/:id", pendidikanHandler.DeleteKompetensi)
+		}
+
+		rotasiGroup := api.Group("/pendidikan/rotasi")
+		rotasiGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			rotasiGroup.GET("", pendidikanHandler.GetRotasi)
+			rotasiGroup.POST("", pendidikanHandler.CreateRotasi)
+			rotasiGroup.DELETE("/:id", pendidikanHandler.DeleteRotasi)
+		}
+
+		miniCexGroup := api.Group("/pendidikan/mini-cex")
+		miniCexGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			miniCexGroup.GET("", pendidikanHandler.GetMiniCex)
+			miniCexGroup.POST("", pendidikanHandler.CreateMiniCex)
+			miniCexGroup.DELETE("/:id", pendidikanHandler.DeleteMiniCex)
+		}
+
+		dopsGroup := api.Group("/pendidikan/dops")
+		dopsGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			dopsGroup.GET("", pendidikanHandler.GetDops)
+			dopsGroup.POST("", pendidikanHandler.CreateDops)
+			dopsGroup.DELETE("/:id", pendidikanHandler.DeleteDops)
+		}
+
+		seminarGroup := api.Group("/pendidikan/seminar")
+		seminarGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			seminarGroup.GET("", pendidikanHandler.GetSeminar)
+			seminarGroup.POST("", pendidikanHandler.CreateSeminar)
+			seminarGroup.DELETE("/:id", pendidikanHandler.DeleteSeminar)
+		}
+
+		cbdGroup := api.Group("/pendidikan/cbd")
+		cbdGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			cbdGroup.GET("", pendidikanHandler.GetCbd)
+			cbdGroup.POST("", pendidikanHandler.CreateCbd)
+			cbdGroup.DELETE("/:id", pendidikanHandler.DeleteCbd)
+		}
+
+		// Approval Endpoints
+		approvalGroup := api.Group("/approval")
+		approvalGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret), middleware.RoleMiddleware("supervisor", "admin"))
+		{
+			approvalGroup.GET("/menunggu", approvalHandler.GetMenunggu)
+			approvalGroup.GET("/disetujui", approvalHandler.GetDisetujui)
+			approvalGroup.GET("/ditolak", approvalHandler.GetDitolak)
+
+			// Tindakan Approval
+			approvalGroup.POST("/tindakans/:id/approve", approvalHandler.ApproveTindakan)
+			approvalGroup.POST("/tindakans/:id/reject", approvalHandler.RejectTindakan)
+
+			// Kegiatan Ilmiah Approval
+			approvalGroup.POST("/kegiatan-ilmiah/:id/approve", approvalHandler.ApproveKegiatanIlmiah)
+			approvalGroup.POST("/kegiatan-ilmiah/:id/reject", approvalHandler.RejectKegiatanIlmiah)
+
+			// Aktivitas Klinik Approval
+			approvalGroup.POST("/aktivitas-klinik/:id/approve", approvalHandler.ApproveAktivitasKlinik)
+			approvalGroup.POST("/aktivitas-klinik/:id/reject", approvalHandler.RejectAktivitasKlinik)
+
+			// Pendidikan Evaluasi Approval
+			approvalGroup.POST("/pendidikan-evaluasi/:id/approve", approvalHandler.ApprovePendidikanEvaluasi)
+			approvalGroup.POST("/pendidikan-evaluasi/:id/reject", approvalHandler.RejectPendidikanEvaluasi)
 		}
 	}
 
