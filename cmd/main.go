@@ -122,14 +122,12 @@ func main() {
 
 		// Jadwal Management Endpoints
 		jadwalGroup := api.Group("/jadwals")
-		// 1. Semua endpoint di bawah /jadwals wajib lulus JWTMiddleware
 		jadwalGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 		{
-			// GET dapat diakses oleh semua user yang memiliki token JWT valid
 			jadwalGroup.GET("", jadwalHandler.GetEvents)
 
 			protectedJadwal := jadwalGroup.Group("")
-			protectedJadwal.Use(middleware.RoleMiddleware("supervisor", "admin"))
+			protectedJadwal.Use(middleware.RoleMiddleware("supervisor", "admin", "residen"))
 			{
 				protectedJadwal.POST("", jadwalHandler.Create)
 				protectedJadwal.PUT("/:id", jadwalHandler.Update)
@@ -143,6 +141,7 @@ func main() {
 		tindakanGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 		{
 			tindakanGroup.GET("", tindakanHandler.GetSummary)
+			tindakanGroup.GET("/getdpjp", tindakanHandler.GetDPJP)
 			tindakanGroup.GET("/:id", tindakanHandler.GetByID)
 			tindakanGroup.POST("", tindakanHandler.Create)
 			tindakanGroup.PUT("/:id", tindakanHandler.Update)
@@ -245,7 +244,6 @@ func main() {
 	r.StaticFile("/docs/openapi.yaml", "./docs/openapi.yaml")
 	r.StaticFile("/docs", "./docs/index.html")
 	r.StaticFile("/swagger", "./docs/swagger.html")
-
 
 	log.Printf("Server running on port :%s", cfg.ServerPort)
 	if err := r.Run(":" + cfg.ServerPort); err != nil {

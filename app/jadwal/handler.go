@@ -22,7 +22,21 @@ func (h *Handler) GetEvents(c *gin.Context) {
 	end := c.Query("end")
 	typeFilter := c.Query("type")
 
-	events, err := h.service.GetEvents(c.Request.Context(), start, end, typeFilter)
+	role := ""
+	if val, exists := c.Get("role"); exists {
+		if r, ok := val.(string); ok {
+			role = r
+		}
+	}
+
+	username := ""
+	if val, exists := c.Get("username"); exists {
+		if u, ok := val.(string); ok {
+			username = u
+		}
+	}
+
+	events, err := h.service.GetEvents(c.Request.Context(), start, end, typeFilter, role, username)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return

@@ -20,16 +20,18 @@ type service struct {
 }
 
 var akunDemoMap = map[string]struct {
-	Password string
-	Role     string
-	Name     string
-	Jabatan  string
+	Password     string
+	Role         string
+	Name         string
+	Jabatan      string
+	ProgramStudi string
+	Nim          string
 }{
-	"fawaid":       {Password: "fawaid", Role: "superadmin", Name: "Achmad Fawaid, S.Tr.Kom", Jabatan: "Super Admin"},
-	"superadmin01": {Password: "superadmin01", Role: "superadmin", Name: "Super Admin Utama", Jabatan: "Super Admin System"},
-	"residen01":    {Password: "residen01", Role: "residen", Name: "dr. Ratna Puspita", Jabatan: "Residen Bedah Th.2"},
-	"supervisor01": {Password: "supervisor01", Role: "supervisor", Name: "dr. Budi Santoso, Sp.B", Jabatan: "DPJP Bedah Umum"},
-	"admin01":      {Password: "admin01", Role: "admin", Name: "Siti Amalia, S.KM", Jabatan: "Admin Komkordik"},
+	"fawaid":       {Password: "fawaid", Role: "superadmin", Name: "Achmad Fawaid, S.Tr.Kom", Jabatan: "Super Admin", ProgramStudi: "Ilmu Kesehatan Mata", Nim: "123456789"},
+	"superadmin01": {Password: "superadmin01", Role: "superadmin", Name: "Super Admin Utama", Jabatan: "Super Admin System", ProgramStudi: "Ilmu Kesehatan Mata", Nim: "123456789"},
+	"residen01":    {Password: "residen01", Role: "residen", Name: "dr. Ratna Puspita", Jabatan: "Residen Bedah Th.2", ProgramStudi: "Ilmu Kesehatan Mata", Nim: "123456789"},
+	"supervisor01": {Password: "supervisor01", Role: "supervisor", Name: "dr. Budi Santoso, Sp.B", Jabatan: "DPJP Bedah Umum", ProgramStudi: "Ilmu Kesehatan Mata", Nim: "123456789"},
+	"admin01":      {Password: "admin01", Role: "admin", Name: "Siti Amalia, S.KM", Jabatan: "Admin Komkordik", ProgramStudi: "Ilmu Kesehatan Mata", Nim: "123456789"},
 }
 
 func NewService(userRepo user.Repository, cfg *configs.Config) Service {
@@ -38,7 +40,7 @@ func NewService(userRepo user.Repository, cfg *configs.Config) Service {
 
 func (s *service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
 	var userID int
-	var username, name, role, jabatan, storedPassword string
+	var username, name, role, jabatan, programStudi, nim, storedPassword string
 	// 1. Coba cari dari database terlebih dahulu
 	u, err := s.userRepo.FindByUsername(ctx, req.Username)
 	if err == nil && u != nil {
@@ -47,6 +49,8 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 		name = u.Name
 		role = u.Role
 		jabatan = u.Jabatan
+		programStudi = u.ProgramStudi
+		nim = u.NimNip
 		storedPassword = u.Password
 	} else {
 		demo, exists := akunDemoMap[req.Username]
@@ -54,10 +58,12 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 			return nil, errors.New("Username atau password salah")
 		}
 		userID = 0
+		nim = demo.Nim
 		username = req.Username
 		name = demo.Name
 		role = demo.Role
 		jabatan = demo.Jabatan
+		programStudi = demo.ProgramStudi
 		storedPassword = demo.Password
 	}
 	// 3. Verifikasi password (bcrypt hash dengan fallback plain-text)
@@ -66,13 +72,13 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 		return nil, errors.New("Username atau password salah")
 	}
 
-	token, err := GenerateToken(userID, username, role, s.cfg.JWTSecret)
+	token, err := GenerateToken(userID, username, name, programStudi, nim, role, s.cfg.JWTSecret)
 	if err != nil {
 		return nil, errors.New("Gagal membuat token")
 	}
 
 	return &LoginResponse{
-		User:  LoginData{Username: username, Name: name, Role: role, Jabatan: jabatan},
+		User:  LoginData{Username: username, Name: name, Role: role, Jabatan: jabatan, ProgramStudi: programStudi, NimNip: nim},
 		Token: token,
 	}, nil
 }
@@ -82,5 +88,5 @@ func (s *service) GetProfile(ctx context.Context, userID int) (*user.UserRespons
 	if err != nil {
 		return nil, errors.New("Pengguna tidak ditemukan")
 	}
-	return &user.UserResponse{ID: u.ID, Username: u.Username, Name: u.Name, Email: u.Email, Role: u.Role, Jabatan: u.Jabatan}, nil
+	return &user.UserResponse{ID: u.ID, Username: u.Username, Name: u.Name, Email: u.Email, Role: u.Role, NimNip: u.NimNip, Jabatan: u.Jabatan, ProgramStudi: u.ProgramStudi}, nil
 }

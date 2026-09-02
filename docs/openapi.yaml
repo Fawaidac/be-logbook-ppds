@@ -471,6 +471,38 @@ paths:
         "201":
           description: Tindakan Draft Created Successfully
 
+  /api/v1/tindakans/getdpjp:
+    get:
+      summary: Get DPJP List
+      description: Get list of supervisor names from users table (role = supervisor) for DPJP dropdown.
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of DPJP names
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil daftar DPJP
+                  data:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - dr. Andi Wijaya, Sp.OT
+                      - dr. Siti Rahma, Sp.OT
+        "401":
+          description: Unauthorized
+
   /api/v1/tindakans/{id}:
     get:
       summary: Get Single Tindakan Detail

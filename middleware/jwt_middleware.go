@@ -42,6 +42,8 @@ func JWTMiddleware(jwtSecret string) gin.HandlerFunc {
 
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("name", claims.Name)
+		c.Set("program_studi", claims.ProgramStudi)
 		c.Set("role", claims.Role)
 
 		c.Next()

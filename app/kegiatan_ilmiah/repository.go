@@ -8,7 +8,7 @@ import (
 
 type KegiatanRepository interface {
 	Create(ctx context.Context, k *KegiatanIlmiah) error
-	FindAll(ctx context.Context, userID int) ([]KegiatanIlmiah, error)
+	FindAll(ctx context.Context, username string) ([]KegiatanIlmiah, error)
 	FindByID(ctx context.Context, id int) (*KegiatanIlmiah, error)
 	FindByKategori(ctx context.Context, kategori string) ([]KegiatanIlmiah, error)
 	Delete(ctx context.Context, id int) error
@@ -62,13 +62,13 @@ func (r *kegiatanRepo) Create(ctx context.Context, k *KegiatanIlmiah) error {
 	).Scan(&k.ID, &k.CreatedAt, &k.UpdatedAt)
 }
 
-func (r *kegiatanRepo) FindAll(ctx context.Context, userID int) ([]KegiatanIlmiah, error) {
+func (r *kegiatanRepo) FindAll(ctx context.Context, username string) ([]KegiatanIlmiah, error) {
 	var list []KegiatanIlmiah
 	var err error
 
-	if userID > 0 {
-		query := `SELECT * FROM kegiatan_ilmiah WHERE residen_id = $1 ORDER BY id DESC`
-		err = r.db.SelectContext(ctx, &list, query, userID)
+	if username != "" {
+		query := `SELECT * FROM kegiatan_ilmiah WHERE user_username = $1 ORDER BY id DESC`
+		err = r.db.SelectContext(ctx, &list, query, username)
 	} else {
 		query := `SELECT * FROM kegiatan_ilmiah ORDER BY id DESC`
 		err = r.db.SelectContext(ctx, &list, query)

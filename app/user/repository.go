@@ -25,13 +25,13 @@ func NewRepository(db *sqlx.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, user *User) error {
-	query := `INSERT INTO users (username, name, email, password, role, jabatan) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at`
-	return r.db.QueryRowContext(ctx, query, user.Username, user.Name, user.Email, user.Password, user.Role, user.Jabatan).Scan(&user.ID, &user.CreatedAt)
+	query := `INSERT INTO users (username, name, email, password, role, jabatan, program_studi, nim_nip) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, created_at`
+	return r.db.QueryRowContext(ctx, query, user.Username, user.Name, user.Email, user.Password, user.Role, user.Jabatan, user.ProgramStudi, user.NimNip).Scan(&user.ID, &user.CreatedAt)
 }
 
 func (r *repository) FindAll(ctx context.Context) ([]User, error) {
 	var users []User
-	query := `SELECT id, username, name, email, password, role, jabatan, created_at FROM users ORDER BY id ASC`
+	query := `SELECT id, username, name, email, password, role, jabatan, COALESCE(nim_nip, '') AS nim_nip, COALESCE(program_studi, '') AS program_studi, created_at FROM users ORDER BY id ASC`
 	err := r.db.SelectContext(ctx, &users, query)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (r *repository) FindAll(ctx context.Context) ([]User, error) {
 
 func (r *repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var user User
-	query := `SELECT id, username, name, email, password, role, jabatan, created_at FROM users WHERE username = $1`
+	query := `SELECT id, username, name, email, password, role, jabatan, COALESCE(nim_nip, '') AS nim_nip, COALESCE(program_studi, '') AS program_studi, created_at FROM users WHERE username = $1`
 	err := r.db.GetContext(ctx, &user, query, username)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
-	query := `SELECT id, username, name, email, password, role, jabatan, created_at FROM users WHERE email = $1`
+	query := `SELECT id, username, name, email, password, role, jabatan, COALESCE(nim_nip, '') AS nim_nip, COALESCE(program_studi, '') AS program_studi, created_at FROM users WHERE email = $1`
 	err := r.db.GetContext(ctx, &user, query, email)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 
 func (r *repository) FindByID(ctx context.Context, id int) (*User, error) {
 	var user User
-	query := `SELECT id, username, name, email, password, role, jabatan, created_at FROM users WHERE id = $1`
+	query := `SELECT id, username, name, email, password, role, jabatan, COALESCE(nim_nip, '') AS nim_nip, COALESCE(program_studi, '') AS program_studi, created_at FROM users WHERE id = $1`
 	err := r.db.GetContext(ctx, &user, query, id)
 	if err != nil {
 		return nil, err
@@ -70,8 +70,8 @@ func (r *repository) FindByID(ctx context.Context, id int) (*User, error) {
 }
 
 func (r *repository) Update(ctx context.Context, user *User) error {
-	query := `UPDATE users SET name = $1, email = $2, password = $3, role = $4, jabatan = $5 WHERE id = $6`
-	_, err := r.db.ExecContext(ctx, query, user.Name, user.Email, user.Password, user.Role, user.Jabatan, user.ID)
+	query := `UPDATE users SET name = $1, email = $2, password = $3, role = $4, jabatan = $5, program_studi = $6, nim_nip = $7 WHERE id = $8`
+	_, err := r.db.ExecContext(ctx, query, user.Name, user.Email, user.Password, user.Role, user.Jabatan, user.ProgramStudi, user.NimNip, user.ID)
 	return err
 }
 

@@ -19,14 +19,14 @@ func NewHandler(service Service) *Handler {
 
 // Kegiatan Ilmiah Handlers
 func (h *Handler) GetIndex(c *gin.Context) {
-	userID := 0
-	if val, exists := c.Get("user_id"); exists {
-		if id, ok := val.(int); ok {
-			userID = id
+	username := ""
+	if val, exists := c.Get("username"); exists {
+		if u, ok := val.(string); ok {
+			username = u
 		}
 	}
 
-	entries, err := h.service.GetAllKegiatan(c.Request.Context(), userID)
+	entries, err := h.service.GetAllKegiatan(c.Request.Context(), username)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -59,7 +59,7 @@ func (h *Handler) Create(c *gin.Context) {
 	programStudi := ""
 	ppdsName := ""
 	nimNip := ""
-	
+
 	if val, exists := c.Get("username"); exists {
 		if u, ok := val.(string); ok {
 			username = u
@@ -145,8 +145,8 @@ func (h *Handler) CreateBimbingan(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"success":    true,
-		"message":    "Catatan bimbingan penelitian berhasil disimpan.",
+		"success":   true,
+		"message":   "Catatan bimbingan penelitian berhasil disimpan.",
 		"bimbingan": res,
 	})
 }

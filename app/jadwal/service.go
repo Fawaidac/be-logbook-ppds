@@ -10,7 +10,7 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, req CreateJadwalRequest, username string) (*EventResponse, error)
-	GetEvents(ctx context.Context, startStr, endStr, typeStr string) ([]EventResponse, error)
+	GetEvents(ctx context.Context, startStr, endStr, typeStr, role, username string) ([]EventResponse, error)
 	Update(ctx context.Context, id int, req UpdateJadwalRequest) (*EventResponse, error)
 	UpdateDates(ctx context.Context, id int, req UpdateDatesRequest) (*EventResponse, error)
 	Delete(ctx context.Context, id int) error
@@ -82,7 +82,7 @@ func (s *service) Create(ctx context.Context, req CreateJadwalRequest, username 
 	return s.toEventResponse(j), nil
 }
 
-func (s *service) GetEvents(ctx context.Context, startStr, endStr, typeStr string) ([]EventResponse, error) {
+func (s *service) GetEvents(ctx context.Context, startStr, endStr, typeStr, role, username string) ([]EventResponse, error) {
 	var startFilter, endFilter time.Time
 	if startStr != "" {
 		startFilter, _ = parseTime(startStr)
@@ -91,7 +91,13 @@ func (s *service) GetEvents(ctx context.Context, startStr, endStr, typeStr strin
 		endFilter, _ = parseTime(endStr)
 	}
 
-	list, err := s.repo.FindAll(ctx, startFilter, endFilter, typeStr)
+	// Role-based filtering: supervisor/residen see only their own, admin sees all
+	var filterUsername string
+	if role == "supervisor" || role == "residen" {
+		filterUsername = username
+	}
+
+	list, err := s.repo.FindAll(ctx, startFilter, endFilter, typeStr, filterUsername)
 	if err != nil {
 		return nil, err
 	}

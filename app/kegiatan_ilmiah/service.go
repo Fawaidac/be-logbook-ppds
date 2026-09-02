@@ -10,7 +10,7 @@ import (
 
 type Service interface {
 	CreateKegiatan(ctx context.Context, req CreateKegiatanIlmiahRequest, username, programStudi, ppdsName, nimNip string) (*KegiatanIlmiahResponse, error)
-	GetAllKegiatan(ctx context.Context, userID int) ([]KegiatanIlmiahResponse, error)
+	GetAllKegiatan(ctx context.Context, username string) ([]KegiatanIlmiahResponse, error)
 	GetByID(ctx context.Context, id int) (*KegiatanIlmiahResponse, error)
 	GetByKategori(ctx context.Context, kategori string) ([]KegiatanIlmiahResponse, error)
 	DeleteKegiatan(ctx context.Context, id int) error
@@ -20,8 +20,8 @@ type Service interface {
 }
 
 type service struct {
-	kegiatanRepo   KegiatanRepository
-	bimbinganRepo  BimbinganRepository
+	kegiatanRepo  KegiatanRepository
+	bimbinganRepo BimbinganRepository
 }
 
 func NewService(kegiatanRepo KegiatanRepository, bimbinganRepo BimbinganRepository) Service {
@@ -54,30 +54,30 @@ func formatDate(nt sql.NullTime) string {
 
 func (s *service) CreateKegiatan(ctx context.Context, req CreateKegiatanIlmiahRequest, username, programStudi, ppdsName, nimNip string) (*KegiatanIlmiahResponse, error) {
 	k := &KegiatanIlmiah{
-		UserUsername:  sql.NullString{String: username, Valid: username != ""},
-		ProgramStudi:  sql.NullString{String: programStudi, Valid: programStudi != ""},
-		PPDSName:      sql.NullString{String: ppdsName, Valid: ppdsName != ""},
-		NIM_NIP:       sql.NullString{String: nimNip, Valid: nimNip != ""},
-		Kategori:      req.Kategori,
-		JenisKegiatan: req.JenisKegiatan,
-		Topik:         req.Topik,
-		TanggalMulai:  parseDate(req.TanggalMulai),
+		UserUsername:   sql.NullString{String: username, Valid: username != ""},
+		ProgramStudi:   sql.NullString{String: programStudi, Valid: programStudi != ""},
+		PPDSName:       sql.NullString{String: ppdsName, Valid: ppdsName != ""},
+		NIM_NIP:        sql.NullString{String: nimNip, Valid: nimNip != ""},
+		Kategori:       req.Kategori,
+		JenisKegiatan:  req.JenisKegiatan,
+		Topik:          req.Topik,
+		TanggalMulai:   parseDate(req.TanggalMulai),
 		TanggalSelesai: parseDate(req.TanggalSelesai),
-		LokasiTipe:    req.LokasiTipe,
-		LokasiDetail:  sql.NullString{String: req.LokasiDetail, Valid: req.LokasiDetail != ""},
-		Sebagai:       sql.NullString{String: req.Sebagai, Valid: req.Sebagai != ""},
-		Pembimbing1:   sql.NullString{String: req.Pembimbing1, Valid: req.Pembimbing1 != ""},
-		Pembimbing2:   sql.NullString{String: req.Pembimbing2, Valid: req.Pembimbing2 != ""},
-		Pembimbing3:   sql.NullString{String: req.Pembimbing3, Valid: req.Pembimbing3 != ""},
-		Pembimbing4:   sql.NullString{String: req.Pembimbing4, Valid: req.Pembimbing4 != ""},
-		Pembimbing5:   sql.NullString{String: req.Pembimbing5, Valid: req.Pembimbing5 != ""},
-		Penguji1:      sql.NullString{String: req.Penguji1, Valid: req.Penguji1 != ""},
-		Penguji2:      sql.NullString{String: req.Penguji2, Valid: req.Penguji2 != ""},
-		Penguji3:      sql.NullString{String: req.Penguji3, Valid: req.Penguji3 != ""},
-		Penguji4:      sql.NullString{String: req.Penguji4, Valid: req.Penguji4 != ""},
-		Penguji5:      sql.NullString{String: req.Penguji5, Valid: req.Penguji5 != ""},
-		Deskripsi:     sql.NullString{String: req.Deskripsi, Valid: req.Deskripsi != ""},
-		Status:        "pending",
+		LokasiTipe:     req.LokasiTipe,
+		LokasiDetail:   sql.NullString{String: req.LokasiDetail, Valid: req.LokasiDetail != ""},
+		Sebagai:        sql.NullString{String: req.Sebagai, Valid: req.Sebagai != ""},
+		Pembimbing1:    sql.NullString{String: req.Pembimbing1, Valid: req.Pembimbing1 != ""},
+		Pembimbing2:    sql.NullString{String: req.Pembimbing2, Valid: req.Pembimbing2 != ""},
+		Pembimbing3:    sql.NullString{String: req.Pembimbing3, Valid: req.Pembimbing3 != ""},
+		Pembimbing4:    sql.NullString{String: req.Pembimbing4, Valid: req.Pembimbing4 != ""},
+		Pembimbing5:    sql.NullString{String: req.Pembimbing5, Valid: req.Pembimbing5 != ""},
+		Penguji1:       sql.NullString{String: req.Penguji1, Valid: req.Penguji1 != ""},
+		Penguji2:       sql.NullString{String: req.Penguji2, Valid: req.Penguji2 != ""},
+		Penguji3:       sql.NullString{String: req.Penguji3, Valid: req.Penguji3 != ""},
+		Penguji4:       sql.NullString{String: req.Penguji4, Valid: req.Penguji4 != ""},
+		Penguji5:       sql.NullString{String: req.Penguji5, Valid: req.Penguji5 != ""},
+		Deskripsi:      sql.NullString{String: req.Deskripsi, Valid: req.Deskripsi != ""},
+		Status:         "pending",
 	}
 
 	if err := s.kegiatanRepo.Create(ctx, k); err != nil {
@@ -87,8 +87,8 @@ func (s *service) CreateKegiatan(ctx context.Context, req CreateKegiatanIlmiahRe
 	return s.toKegiatanResponse(k), nil
 }
 
-func (s *service) GetAllKegiatan(ctx context.Context, userID int) ([]KegiatanIlmiahResponse, error) {
-	list, err := s.kegiatanRepo.FindAll(ctx, userID)
+func (s *service) GetAllKegiatan(ctx context.Context, username string) ([]KegiatanIlmiahResponse, error) {
+	list, err := s.kegiatanRepo.FindAll(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -139,14 +139,14 @@ func (s *service) CreateBimbingan(ctx context.Context, req CreateBimbinganReques
 	sesiKe := "Sesi " + strconv.Itoa(sesiNum)
 
 	b := &BimbinganPenelitian{
-		UserUsername:     sql.NullString{String: username, Valid: username != ""},
-		SesiKe:           sesiKe,
-		Tahap:            req.Tahap,
-		TopikBimbingan:   req.TopikBimbingan,
-		Tanggal:          sql.NullTime{Time: time.Now(), Valid: true},
-		Pembimbing:       sql.NullString{String: req.Pembimbing, Valid: true},
+		UserUsername:      sql.NullString{String: username, Valid: username != ""},
+		SesiKe:            sesiKe,
+		Tahap:             req.Tahap,
+		TopikBimbingan:    req.TopikBimbingan,
+		Tanggal:           sql.NullTime{Time: time.Now(), Valid: true},
+		Pembimbing:        sql.NullString{String: req.Pembimbing, Valid: true},
 		CatatanPembimbing: sql.NullString{String: req.CatatanPembimbing, Valid: true},
-		StatusAcc:        "Dalam Proses",
+		StatusAcc:         "Dalam Proses",
 	}
 
 	if err := s.bimbinganRepo.Create(ctx, b); err != nil {
@@ -176,8 +176,6 @@ func (s *service) GetBimbinganByID(ctx context.Context, id int) (*BimbinganRespo
 	}
 	return s.toBimbinganResponse(b), nil
 }
-
-
 
 func (s *service) toKegiatanResponse(k *KegiatanIlmiah) *KegiatanIlmiahResponse {
 	return &KegiatanIlmiahResponse{

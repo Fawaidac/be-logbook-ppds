@@ -8,7 +8,8 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, t *Tindakan) error
-	FindAll(ctx context.Context, userID int) ([]Tindakan, error)
+	FindDPJP(ctx context.Context) ([]string, error)
+	FindAll(ctx context.Context, userName string) ([]Tindakan, error)
 	FindByID(ctx context.Context, id int) (*Tindakan, error)
 	Update(ctx context.Context, t *Tindakan) error
 	UpdateStatus(ctx context.Context, id int, status string) error
@@ -46,13 +47,22 @@ func (r *repository) Create(ctx context.Context, t *Tindakan) error {
 	).Scan(&t.ID, &t.CreatedAt, &t.UpdatedAt)
 }
 
-func (r *repository) FindAll(ctx context.Context, userID int) ([]Tindakan, error) {
+func (r *repository) FindDPJP(ctx context.Context) ([]string, error) {
+	var names []string
+	query := `SELECT name FROM users WHERE role = 'supervisor' ORDER BY name ASC`
+	if err := r.db.SelectContext(ctx, &names, query); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
+func (r *repository) FindAll(ctx context.Context, userName string) ([]Tindakan, error) {
 	var list []Tindakan
 	var err error
 
-	if userID > 0 {
+	if userName != "" {
 		query := `SELECT * FROM tindakans WHERE user_username = $1 ORDER BY id DESC`
-		err = r.db.SelectContext(ctx, &list, query, userID)
+		err = r.db.SelectContext(ctx, &list, query, userName)
 	} else {
 		query := `SELECT * FROM tindakans ORDER BY id DESC`
 		err = r.db.SelectContext(ctx, &list, query)

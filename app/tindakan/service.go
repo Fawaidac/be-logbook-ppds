@@ -9,8 +9,9 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, req CreateTindakanRequest, userID int) (*TindakanResponse, error)
-	GetSummary(ctx context.Context, userID int) (*SummaryResponse, error)
+	Create(ctx context.Context, req CreateTindakanRequest, userName string) (*TindakanResponse, error)
+	GetDPJP(ctx context.Context) ([]string, error)
+	GetSummary(ctx context.Context, userName string) (*SummaryResponse, error)
 	GetByID(ctx context.Context, id int) (*TindakanResponse, error)
 	Update(ctx context.Context, id int, req UpdateTindakanRequest) (*TindakanResponse, error)
 	Send(ctx context.Context, id int) error
@@ -53,13 +54,14 @@ func defaultString(val, fallback string) string {
 	return fallback
 }
 
-func (s *service) Create(ctx context.Context, req CreateTindakanRequest, userID int) (*TindakanResponse, error) {
+func (s *service) Create(ctx context.Context, req CreateTindakanRequest, userName string) (*TindakanResponse, error) {
 	procDate := parseDate(req.ProcedureDate)
 	if !procDate.Valid {
 		procDate = sql.NullTime{Time: time.Now(), Valid: true}
 	}
 
 	t := &Tindakan{
+		UserUsername:   sql.NullString{String: userName, Valid: userName != ""},
 		MRNumber:       req.MRNumber,
 		VisitDate:      parseDate(req.VisitDate),
 		PatientName:    req.PatientName,
@@ -86,8 +88,12 @@ func (s *service) Create(ctx context.Context, req CreateTindakanRequest, userID 
 	return s.toResponse(t), nil
 }
 
-func (s *service) GetSummary(ctx context.Context, userID int) (*SummaryResponse, error) {
-	list, err := s.repo.FindAll(ctx, userID)
+func (s *service) GetDPJP(ctx context.Context) ([]string, error) {
+	return s.repo.FindDPJP(ctx)
+}
+
+func (s *service) GetSummary(ctx context.Context, userName string) (*SummaryResponse, error) {
+	list, err := s.repo.FindAll(ctx, userName)
 	if err != nil {
 		return nil, err
 	}

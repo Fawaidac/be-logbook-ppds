@@ -6,10 +6,12 @@ type LoginRequest struct {
 }
 
 type LoginData struct {
-	Username string `json:"username"`
-	Name     string `json:"name"`
-	Role     string `json:"role"`
-	Jabatan  string `json:"jabatan"`
+	Username     string `json:"username"`
+	Name         string `json:"name"`
+	Role         string `json:"role"`
+	Jabatan      string `json:"jabatan"`
+	ProgramStudi string `json:"program_studi"`
+	NimNip		 string `json:"nim_nip"`
 }
 
 type LoginResponse struct {

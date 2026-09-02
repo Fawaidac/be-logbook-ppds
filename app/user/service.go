@@ -23,6 +23,20 @@ func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
+func toUserResponse(u *User) *UserResponse {
+	return &UserResponse{
+		ID:           u.ID,
+		Username:     u.Username,
+		Name:         u.Name,
+		Email:        u.Email,
+		Role:         u.Role,
+		NimNip:       u.NimNip,
+		Jabatan:      u.Jabatan,
+		ProgramStudi: u.ProgramStudi,
+		CreatedAt:    u.CreatedAt,
+	}
+}
+
 func (s *service) CreateUser(ctx context.Context, req CreateUserRequest) (*UserResponse, error) {
 	// Cek apakah username sudah ada
 	existingUser, _ := s.repo.FindByUsername(ctx, req.Username)
@@ -36,27 +50,21 @@ func (s *service) CreateUser(ctx context.Context, req CreateUserRequest) (*UserR
 	}
 
 	u := &User{
-		Username: req.Username,
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: hashedPassword,
-		Role:     req.Role,
-		Jabatan:  req.Jabatan,
+		Username:     req.Username,
+		Name:         req.Name,
+		Email:        req.Email,
+		Password:     hashedPassword,
+		Role:         req.Role,
+		NimNip:       req.NimNip,
+		Jabatan:      req.Jabatan,
+		ProgramStudi: req.ProgramStudi,
 	}
 
 	if err := s.repo.Create(ctx, u); err != nil {
 		return nil, err
 	}
 
-	return &UserResponse{
-		ID:        u.ID,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Role:      u.Role,
-		Jabatan:   u.Jabatan,
-		CreatedAt: u.CreatedAt,
-	}, nil
+	return toUserResponse(u), nil
 }
 
 func (s *service) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
@@ -67,15 +75,7 @@ func (s *service) GetAllUsers(ctx context.Context) ([]UserResponse, error) {
 
 	var res []UserResponse
 	for _, u := range users {
-		res = append(res, UserResponse{
-			ID:        u.ID,
-			Username:  u.Username,
-			Name:      u.Name,
-			Email:     u.Email,
-			Role:      u.Role,
-			Jabatan:   u.Jabatan,
-			CreatedAt: u.CreatedAt,
-		})
+		res = append(res, *toUserResponse(&u))
 	}
 	return res, nil
 }
@@ -85,15 +85,7 @@ func (s *service) GetUserByID(ctx context.Context, id int) (*UserResponse, error
 	if err != nil {
 		return nil, errors.New("pengguna tidak ditemukan")
 	}
-	return &UserResponse{
-		ID:        u.ID,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Role:      u.Role,
-		Jabatan:   u.Jabatan,
-		CreatedAt: u.CreatedAt,
-	}, nil
+	return toUserResponse(u), nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id int, req UpdateUserRequest) (*UserResponse, error) {
@@ -105,7 +97,9 @@ func (s *service) UpdateUser(ctx context.Context, id int, req UpdateUserRequest)
 	u.Name = req.Name
 	u.Email = req.Email
 	u.Role = req.Role
+	u.NimNip = req.NimNip
 	u.Jabatan = req.Jabatan
+	u.ProgramStudi = req.ProgramStudi
 
 	if req.Password != "" {
 		hashed, err := utils.HashPassword(req.Password)
@@ -119,15 +113,7 @@ func (s *service) UpdateUser(ctx context.Context, id int, req UpdateUserRequest)
 		return nil, err
 	}
 
-	return &UserResponse{
-		ID:        u.ID,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Role:      u.Role,
-		Jabatan:   u.Jabatan,
-		CreatedAt: u.CreatedAt,
-	}, nil
+	return toUserResponse(u), nil
 }
 
 func (s *service) DeleteUser(ctx context.Context, id int) error {
@@ -138,5 +124,3 @@ func (s *service) DeleteUser(ctx context.Context, id int) error {
 
 	return s.repo.Delete(ctx, id)
 }
-
-

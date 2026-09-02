@@ -10,7 +10,7 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, j *Jadwal) error
-	FindAll(ctx context.Context, startFilter, endFilter time.Time, typeFilter string) ([]Jadwal, error)
+	FindAll(ctx context.Context, startFilter, endFilter time.Time, typeFilter, filterUsername string) ([]Jadwal, error)
 	FindByID(ctx context.Context, id int) (*Jadwal, error)
 	Update(ctx context.Context, j *Jadwal) error
 	UpdateDates(ctx context.Context, id int, startTime, endTime time.Time, allDay bool) error
@@ -35,24 +35,29 @@ func (r *repository) Create(ctx context.Context, j *Jadwal) error {
 	).Scan(&j.ID, &j.CreatedAt, &j.UpdatedAt)
 }
 
-func (r *repository) FindAll(ctx context.Context, startFilter, endFilter time.Time, typeFilter string) ([]Jadwal, error) {
+func (r *repository) FindAll(ctx context.Context, startFilter, endFilter time.Time, typeFilter, filterUsername string) ([]Jadwal, error) {
 	var list []Jadwal
 	query := `SELECT id, title, description, location, start_time, end_time, all_day, type, user_username, created_at, updated_at FROM jadwals WHERE 1=1`
 	args := []interface{}{}
 	argIdx := 1
 
+	if filterUsername != "" {
+		query += fmt.Sprintf(` AND user_username = $%d`, argIdx)
+		args = append(args, filterUsername)
+		argIdx++
+	}
 	if !startFilter.IsZero() {
-		query += fmt.Sprintf(" AND start_time >= $%d", argIdx)
+		query += fmt.Sprintf(` AND start_time >= $%d`, argIdx)
 		args = append(args, startFilter)
 		argIdx++
 	}
 	if !endFilter.IsZero() {
-		query += fmt.Sprintf(" AND end_time <= $%d", argIdx)
+		query += fmt.Sprintf(` AND end_time <= $%d`, argIdx)
 		args = append(args, endFilter)
 		argIdx++
 	}
 	if typeFilter != "" && typeFilter != "all" {
-		query += fmt.Sprintf(" AND type = $%d", argIdx)
+		query += fmt.Sprintf(` AND type = $%d`, argIdx)
 		args = append(args, typeFilter)
 		argIdx++
 	}

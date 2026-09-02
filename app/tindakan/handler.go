@@ -18,20 +18,25 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) GetSummary(c *gin.Context) {
-	userID := 0
-	if val, exists := c.Get("user_id"); exists {
-		if id, ok := val.(int); ok {
-			userID = id
-		}
-	}
+	userName := loggedName(c)
 
-	summary, err := h.service.GetSummary(c.Request.Context(), userID)
+	summary, err := h.service.GetSummary(c.Request.Context(), userName)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	response.Success(c, http.StatusOK, "Berhasil mengambil rekap logbook tindakan", summary)
+}
+
+func (h *Handler) GetDPJP(c *gin.Context) {
+	dpjp, err := h.service.GetDPJP(c.Request.Context())
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Berhasil mengambil daftar DPJP", dpjp)
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
@@ -58,14 +63,9 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	userID := 0
-	if val, exists := c.Get("user_id"); exists {
-		if id, ok := val.(int); ok {
-			userID = id
-		}
-	}
+	userName := loggedName(c)
 
-	res, err := h.service.Create(c.Request.Context(), req, userID)
+	res, err := h.service.Create(c.Request.Context(), req, userName)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -76,6 +76,20 @@ func (h *Handler) Create(c *gin.Context) {
 		"message":  "Tindakan berhasil disimpan. Silakan klik 'Kirim' untuk mengirim ke approval DPJP.",
 		"tindakan": res,
 	})
+}
+
+func loggedName(c *gin.Context) string {
+	if val, exists := c.Get("name"); exists {
+		if name, ok := val.(string); ok && name != "" {
+			return name
+		}
+	}
+	if val, exists := c.Get("username"); exists {
+		if username, ok := val.(string); ok {
+			return username
+		}
+	}
+	return ""
 }
 
 func (h *Handler) Update(c *gin.Context) {
