@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS user_registrations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    nik VARCHAR(50) NULL,
+    str VARCHAR(100) NULL,
+    sip VARCHAR(100) NULL,
+    username VARCHAR(100) NULL,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    specialty VARCHAR(100) NULL,
+    program_studi VARCHAR(100) NULL,
+    university VARCHAR(100) NULL,
+    selfie_path VARCHAR(255) NULL,
+    str_file_path VARCHAR(255) NULL,
+    sip_file_path VARCHAR(255) NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    rejection_reason VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,0 +1,1 @@
+ALTER TABLE user_registrations ADD COLUMN IF NOT EXISTS username VARCHAR(100) NULL;

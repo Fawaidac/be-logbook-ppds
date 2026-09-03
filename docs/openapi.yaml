@@ -1277,6 +1277,93 @@ paths:
         '200':
           description: Pendidikan evaluasi marked for revision
 
+  /api/v1/dashboard:
+    get:
+      summary: Get Dashboard Overview & Metrics
+      description: Retrieve total actions count, pending validation count, revision count, upcoming schedules, recent logbook entries, and monthly cumulative chart data.
+      tags:
+        - Dashboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+          example: 2026
+        - in: query
+          name: username
+          required: false
+          schema:
+            type: string
+          example: residen01
+      responses:
+        "200":
+          description: Dashboard summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data dashboard
+                  data:
+                    $ref: "#/components/schemas/DashboardSummaryResponse"
+        "401":
+          description: Unauthorized
+
+  /api/v1/dashboard/laporan:
+    get:
+      summary: Get Report Summary & Statistics
+      description: Retrieve rekap logbook per procedure, kompetensi list, kegiatan ilmiah counts, supervision response rate, and DPJP statistics.
+      tags:
+        - Dashboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: periode
+          required: false
+          schema:
+            type: string
+            enum: [bulan_ini, tahun_ini, semua]
+          example: bulan_ini
+        - in: query
+          name: stase
+          required: false
+          schema:
+            type: string
+          example: semua
+        - in: query
+          name: username
+          required: false
+          schema:
+            type: string
+          example: residen01
+      responses:
+        "200":
+          description: Report summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data laporan
+                  data:
+                    $ref: "#/components/schemas/LaporanSummaryResponse"
+        "401":
+          description: Unauthorized
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1334,3 +1421,294 @@ components:
         message:
           type: string
           example: Username, kata sandi, atau peran yang dipilih tidak cocok.
+    DashboardSummaryResponse:
+      type: object
+      properties:
+        total_tindakan:
+          type: integer
+          example: 24
+        menunggu_validasi:
+          type: integer
+          example: 3
+        perlu_revisi:
+          type: integer
+          example: 1
+        upcoming_jadwals:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              title:
+                type: string
+                example: Jaga Malam IGD Shift 2
+              start:
+                type: string
+                example: "2026-08-25T20:00:00Z"
+              end:
+                type: string
+                example: "2026-08-26T08:00:00Z"
+              all_day:
+                type: boolean
+                example: false
+              type:
+                type: string
+                example: jaga
+              location:
+                type: string
+                example: Ruang IGD RSUD
+        recent_entries:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              procedure_date:
+                type: string
+                example: "2026-08-20T00:00:00Z"
+              diagnosis_label:
+                type: string
+                example: Fraktur Femur Dekstra
+              plan_procedure:
+                type: string
+                example: ORIF Plating Femur
+              kemandirian:
+                type: string
+                example: mandiri
+              supervisor_name:
+                type: string
+                example: dr. Andi Wijaya, Sp.OT
+              dpjp_name:
+                type: string
+                example: dr. Andi Wijaya, Sp.OT
+              status:
+                type: string
+                example: disetujui
+        chart_data:
+          type: object
+          properties:
+            months:
+              type: array
+              items:
+                type: string
+              example: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            mandiri:
+              type: array
+              items:
+                type: integer
+              example: [1, 3, 5, 8, 12, 15, 18, 20, 22, 24, 24, 24]
+            dibimbing:
+              type: array
+              items:
+                type: integer
+              example: [0, 1, 2, 4, 5, 7, 9, 10, 11, 12, 12, 12]
+            observasi:
+              type: array
+              items:
+                type: integer
+              example: [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 5]
+            seminar:
+              type: array
+              items:
+                type: integer
+              example: [1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 6]
+
+    LaporanSummaryResponse:
+      type: object
+      properties:
+        rekap_tindakan:
+          type: array
+          items:
+            type: object
+            properties:
+              plan_procedure:
+                type: string
+                example: ORIF Plating Femur
+              mandiri_count:
+                type: integer
+                example: 5
+              dibimbing_count:
+                type: integer
+                example: 2
+              observasi_count:
+                type: integer
+                example: 1
+              total_count:
+                type: integer
+                example: 8
+        kompetensi_list:
+          type: array
+          items:
+            type: object
+        simposium_count:
+          type: integer
+          example: 4
+        workshop_count:
+          type: integer
+          example: 2
+        multidisiplin_count:
+          type: integer
+          example: 1
+        ilmiah_lain_count:
+          type: integer
+          example: 3
+        total_bimbingan:
+          type: integer
+          example: 30
+        menunggu_count:
+          type: integer
+          example: 4
+        disetujui_count:
+          type: integer
+          example: 25
+        respon_rate:
+          type: integer
+          example: 83
+        dpjp_stats:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: dr. Andi Wijaya, Sp.OT
+              total_logs:
+                type: integer
+                example: 15
+              approved_logs:
+                type: integer
+                example: 12
+              pending_logs:
+                type: integer
+                example: 3
+              initials:
+                type: string
+                example: AW
+              pct:
+                type: integer
+                example: 80
+
+    ApprovalListResponse:
+      type: object
+      properties:
+        tindakan:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              mr_number:
+                type: string
+                example: RM-12345
+              patient_name:
+                type: string
+                example: Budi Santoso
+              diagnosis_label:
+                type: string
+                example: Appendicitis Akut
+              plan_procedure:
+                type: string
+                example: Appendektomi
+              status:
+                type: string
+                example: menunggu
+              created_at:
+                type: string
+                example: "2026-08-25T10:00:00Z"
+        kegiatan_ilmiah:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              ppds_name:
+                type: string
+                example: dr. Ratna Puspita
+              kategori:
+                type: string
+                example: simposium
+              jenis_kegiatan:
+                type: string
+                example: Presenter
+              topik:
+                type: string
+                example: Penanganan Trauma Abdomen
+              tanggal_mulai:
+                type: string
+                example: "2026-08-20"
+              lokasi_tipe:
+                type: string
+                example: RS
+              lokasi_detail:
+                type: string
+                example: Ruang Pertemuan Utama
+              sebagai:
+                type: string
+                example: Pembicara
+              status:
+                type: string
+                example: menunggu
+              created_at:
+                type: string
+                example: "2026-08-25T10:00:00Z"
+        aktivitas_klinik:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              nama_aktivitas:
+                type: string
+                example: Jaga Malam
+              tanggal:
+                type: string
+                example: "2026-08-25"
+              status:
+                type: string
+                example: menunggu
+              created_at:
+                type: string
+                example: "2026-08-25T10:00:00Z"
+        pendidikan_evaluasi:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              jenis_evaluasi:
+                type: string
+                example: mini_cex
+              tanggal:
+                type: string
+                example: "2026-08-25"
+              status:
+                type: string
+                example: Menunggu Validasi
+              created_at:
+                type: string
+                example: "2026-08-25T10:00:00Z"
+

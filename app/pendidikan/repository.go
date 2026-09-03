@@ -66,11 +66,11 @@ func NewKompetensiRepository(db *sqlx.DB) KompetensiRepository {
 
 func (r *kompetensiRepo) Create(ctx context.Context, k *PendidikanKompetensi) error {
 	query := `
-		INSERT INTO pendidikan_kompetensi (user_username, kode, nama, domain, level_target, target_log, achieved_log, evaluator, status, tgl_verifikasi, deskripsi, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+		INSERT INTO pendidikan_kompetensi (user_username, kode, nama, domain, level_target, target_log, achieved_log, evaluator, status, tgl_verifikasi, deskripsi, revisi_catatan, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
 		RETURNING id, created_at, updated_at`
 	return r.db.QueryRowContext(ctx, query,
-		k.UserUsername, k.Kode, k.Nama, k.Domain, k.LevelTarget, k.TargetLog, k.AchievedLog, k.Evaluator, k.Status, k.TglVerifikasi, k.Deskripsi,
+		k.UserUsername, k.Kode, k.Nama, k.Domain, k.LevelTarget, k.TargetLog, k.AchievedLog, k.Evaluator, k.Status, k.TglVerifikasi, k.Deskripsi, k.ReviziCatatan,
 	).Scan(&k.ID, &k.CreatedAt, &k.UpdatedAt)
 }
 
@@ -115,11 +115,11 @@ func NewRotasiRepository(db *sqlx.DB) RotasiRepository {
 
 func (r *rotasiRepo) Create(ctx context.Context, ro *PendidikanRotasi) error {
 	query := `
-		INSERT INTO pendidikan_rotasi (user_username, stase, lokasi, periode, pembimbing, kehadiran, nilai, status, tanggal, catatan, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+		INSERT INTO pendidikan_rotasi (user_username, stase, lokasi, periode, pembimbing, kehadiran, nilai, status, tanggal, catatan, revisi_catatan, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
 		RETURNING id, created_at, updated_at`
 	return r.db.QueryRowContext(ctx, query,
-		ro.UserUsername, ro.Stase, ro.Lokasi, ro.Periode, ro.Pembimbing, ro.Kehadiran, ro.Nilai, ro.Status, ro.Tanggal, ro.Catatan,
+		ro.UserUsername, ro.Stase, ro.Lokasi, ro.Periode, ro.Pembimbing, ro.Kehadiran, ro.Nilai, ro.Status, ro.Tanggal, ro.Catatan, ro.ReviziCatatan,
 	).Scan(&ro.ID, &ro.CreatedAt, &ro.UpdatedAt)
 }
 
@@ -164,11 +164,11 @@ func NewMiniCexRepository(db *sqlx.DB) MiniCexRepository {
 
 func (r *miniCexRepo) Create(ctx context.Context, m *PendidikanMiniCex) error {
 	query := `
-		INSERT INTO pendidikan_mini_cex (user_username, pasien, fokus, kasus, evaluator, skor, status, tanggal, catatan, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+		INSERT INTO pendidikan_mini_cex (user_username, pasien, fokus, kasus, evaluator, skor, status, tanggal, catatan, revisi_catatan, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
 		RETURNING id, created_at, updated_at`
 	return r.db.QueryRowContext(ctx, query,
-		m.UserUsername, m.Pasien, m.Fokus, m.Kasus, m.Evaluator, m.Skor, m.Status, m.Tanggal, m.Catatan,
+		m.UserUsername, m.Pasien, m.Fokus, m.Kasus, m.Evaluator, m.Skor, m.Status, m.Tanggal, m.Catatan, m.ReviziCatatan,
 	).Scan(&m.ID, &m.CreatedAt, &m.UpdatedAt)
 }
 
@@ -213,11 +213,11 @@ func NewDopsRepository(db *sqlx.DB) DopsRepository {
 
 func (r *dopsRepo) Create(ctx context.Context, d *PendidikanDops) error {
 	query := `
-		INSERT INTO pendidikan_dops (user_username, prosedur, kategori, kesulitan, supervisor, skor, status, tanggal, catatan, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+		INSERT INTO pendidikan_dops (user_username, prosedur, kategori, kesulitan, supervisor, skor, status, tanggal, catatan, revisi_catatan, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
 		RETURNING id, created_at, updated_at`
 	return r.db.QueryRowContext(ctx, query,
-		d.UserUsername, d.Prosedur, d.Kategori, d.Kesulitan, d.Supervisor, d.Skor, d.Status, d.Tanggal, d.Catatan,
+		d.UserUsername, d.Prosedur, d.Kategori, d.Kesulitan, d.Supervisor, d.Skor, d.Status, d.Tanggal, d.Catatan, d.ReviziCatatan,
 	).Scan(&d.ID, &d.CreatedAt, &d.UpdatedAt)
 }
 
@@ -311,11 +311,11 @@ func NewCbdRepository(db *sqlx.DB) CbdRepository {
 
 func (r *cbdRepo) Create(ctx context.Context, c *PendidikanCbd) error {
 	query := `
-		INSERT INTO pendidikan_cbd (user_username, pasien, topik, kategori, pembimbing, kompleksitas, skor, status, tanggal, catatan, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+		INSERT INTO pendidikan_cbd (user_username, pasien, topik, kategori, pembimbing, kompleksitas, skor, status, tanggal, catatan, revisi_catatan, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
 		RETURNING id, created_at, updated_at`
 	return r.db.QueryRowContext(ctx, query,
-		c.UserUsername, c.Pasien, c.Topik, c.Kategori, c.Pembimbing, c.Kompleksitas, c.Skor, c.Status, c.Tanggal, c.Catatan,
+		c.UserUsername, c.Pasien, c.Topik, c.Kategori, c.Pembimbing, c.Kompleksitas, c.Skor, c.Status, c.Tanggal, c.Catatan, c.ReviziCatatan,
 	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
 }
 

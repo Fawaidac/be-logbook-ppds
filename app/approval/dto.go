@@ -2,49 +2,54 @@ package approval
 
 // Response DTOs
 type ApprovalListResponse struct {
-	Tindakan         []TindakanApprovalItem         `json:"tindakan,omitempty"`
-	KegiatanIlmiah   []KegiatanApprovalItem         `json:"kegiatan_ilmiah,omitempty"`
-	AktivitasKlinik  []AktivitasKlinikApprovalItem  `json:"aktivitas_klinik,omitempty"`
+	Tindakan           []TindakanApprovalItem           `json:"tindakan,omitempty"`
+	KegiatanIlmiah     []KegiatanApprovalItem           `json:"kegiatan_ilmiah,omitempty"`
+	AktivitasKlinik    []AktivitasKlinikApprovalItem    `json:"aktivitas_klinik,omitempty"`
 	PendidikanEvaluasi []PendidikanEvaluasiApprovalItem `json:"pendidikan_evaluasi,omitempty"`
 }
 
 type TindakanApprovalItem struct {
-	ID             int    `json:"id"`
-	UserUsername   string `json:"user_username,omitempty"`
-	MRNumber       string `json:"mr_number"`
-	PatientName    string `json:"patient_name"`
-	DiagnosisLabel string `json:"diagnosis_label,omitempty"`
-	PlanProcedure  string `json:"plan_procedure,omitempty"`
-	Status         string `json:"status"`
-	CreatedAt      string `json:"created_at,omitempty"`
+	ID             int    `db:"id" json:"id"`
+	UserUsername   string `db:"user_username" json:"user_username,omitempty"`
+	MRNumber       string `db:"mr_number" json:"mr_number"`
+	PatientName    string `db:"patient_name" json:"patient_name"`
+	DiagnosisLabel string `db:"diagnosis_label" json:"diagnosis_label,omitempty"`
+	PlanProcedure  string `db:"plan_procedure" json:"plan_procedure,omitempty"`
+	Status         string `db:"status" json:"status"`
+	CreatedAt      string `db:"created_at" json:"created_at,omitempty"`
 }
 
 type KegiatanApprovalItem struct {
-	ID             int    `json:"id"`
-	UserUsername   string `json:"user_username,omitempty"`
-	Kategori       string `json:"kategori"`
-	JenisKegiatan  string `json:"jenis_kegiatan,omitempty"`
-	Topik          string `json:"topik,omitempty"`
-	Status         string `json:"status"`
-	CreatedAt      string `json:"created_at,omitempty"`
+	ID            int    `db:"id" json:"id"`
+	UserUsername  string `db:"user_username" json:"user_username,omitempty"`
+	PPDSName      string `db:"ppds_name" json:"ppds_name,omitempty"`
+	Kategori      string `db:"kategori" json:"kategori"`
+	JenisKegiatan string `db:"jenis_kegiatan" json:"jenis_kegiatan,omitempty"`
+	Topik         string `db:"topik" json:"topik,omitempty"`
+	TanggalMulai  string `db:"tanggal_mulai" json:"tanggal_mulai,omitempty"`
+	LokasiTipe    string `db:"lokasi_tipe" json:"lokasi_tipe,omitempty"`
+	LokasiDetail  string `db:"lokasi_detail" json:"lokasi_detail,omitempty"`
+	Sebagai       string `db:"sebagai" json:"sebagai,omitempty"`
+	Status        string `db:"status" json:"status"`
+	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
 }
 
 type AktivitasKlinikApprovalItem struct {
-	ID            int    `json:"id"`
-	UserUsername  string `json:"user_username,omitempty"`
-	NamaAktivitas string `json:"nama_aktivitas,omitempty"`
-	Tanggal       string `json:"tanggal,omitempty"`
-	Status        string `json:"status"`
-	CreatedAt     string `json:"created_at,omitempty"`
+	ID            int    `db:"id" json:"id"`
+	UserUsername  string `db:"user_username" json:"user_username,omitempty"`
+	NamaAktivitas string `db:"nama_aktivitas" json:"nama_aktivitas,omitempty"`
+	Tanggal       string `db:"tanggal" json:"tanggal,omitempty"`
+	Status        string `db:"status" json:"status"`
+	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
 }
 
 type PendidikanEvaluasiApprovalItem struct {
-	ID           int    `json:"id"`
-	UserUsername string `json:"user_username,omitempty"`
-	JenisEvaluasi string `json:"jenis_evaluasi,omitempty"`
-	Tanggal      string `json:"tanggal,omitempty"`
-	Status       string `json:"status"`
-	CreatedAt    string `json:"created_at,omitempty"`
+	ID            int    `db:"id" json:"id"`
+	UserUsername  string `db:"user_username" json:"user_username,omitempty"`
+	JenisEvaluasi string `db:"jenis_evaluasi" json:"jenis_evaluasi,omitempty"`
+	Tanggal       string `db:"tanggal" json:"tanggal,omitempty"`
+	Status        string `db:"status" json:"status"`
+	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
 }
 
 type ApprovalAction struct {

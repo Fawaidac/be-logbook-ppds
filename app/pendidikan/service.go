@@ -151,6 +151,7 @@ func (s *kompetensiService) toKompetensiResponse(k *PendidikanKompetensi) *Kompe
 		Status:        k.Status,
 		TglVerifikasi: k.TglVerifikasi.String,
 		Deskripsi:     k.Deskripsi.String,
+		ReviziCatatan: k.ReviziCatatan.String,
 	}
 }
 
@@ -164,9 +165,13 @@ func NewRotasiService(repo RotasiRepository) RotasiService {
 }
 
 func (s *rotasiService) CreateRotasi(ctx context.Context, req CreateRotasiRequest, username string) (*RotasiResponse, error) {
+	stase := req.Stase
+	if stase == "" {
+		stase = "Stase Poliklinik & Rawat Jalan Ortopedi"
+	}
 	r := &PendidikanRotasi{
 		UserUsername: sql.NullString{String: username, Valid: username != ""},
-		Stase:        "Stase Poliklinik & Rawat Jalan Ortopedi",
+		Stase:        stase,
 		Lokasi:       sql.NullString{String: "RSUD dr. Soebandi", Valid: true},
 		Periode:      sql.NullString{String: time.Now().Format("02 Jan 2006"), Valid: true},
 		Pembimbing:   sql.NullString{String: req.Pembimbing, Valid: req.Pembimbing != ""},
@@ -291,16 +296,17 @@ func (s *miniCexService) DeleteMiniCex(ctx context.Context, id int) error {
 
 func (s *miniCexService) toMiniCexResponse(m *PendidikanMiniCex) *MiniCexResponse {
 	return &MiniCexResponse{
-		ID:           m.ID,
-		UserUsername: m.UserUsername.String,
-		Pasien:       m.Pasien.String,
-		Fokus:        m.Fokus.String,
-		Kasus:        m.Kasus.String,
-		Evaluator:    m.Evaluator.String,
-		Skor:         m.Skor.String,
-		Status:       m.Status,
-		Tanggal:      m.Tanggal.String,
-		Catatan:      m.Catatan.String,
+		ID:            m.ID,
+		UserUsername:  m.UserUsername.String,
+		Pasien:        m.Pasien.String,
+		Fokus:         m.Fokus.String,
+		Kasus:         m.Kasus.String,
+		Evaluator:     m.Evaluator.String,
+		Skor:          m.Skor.String,
+		Status:        m.Status,
+		Tanggal:       m.Tanggal.String,
+		Catatan:       m.Catatan.String,
+		ReviziCatatan: m.ReviziCatatan.String,
 	}
 }
 
@@ -365,16 +371,17 @@ func (s *dopsService) DeleteDops(ctx context.Context, id int) error {
 
 func (s *dopsService) toDopsResponse(d *PendidikanDops) *DopsResponse {
 	return &DopsResponse{
-		ID:           d.ID,
-		UserUsername: d.UserUsername.String,
-		Prosedur:     d.Prosedur.String,
-		Kategori:     d.Kategori.String,
-		Kesulitan:    d.Kesulitan.String,
-		Supervisor:   d.Supervisor.String,
-		Skor:         d.Skor.String,
-		Status:       d.Status,
-		Tanggal:      d.Tanggal.String,
-		Catatan:      d.Catatan.String,
+		ID:            d.ID,
+		UserUsername:  d.UserUsername.String,
+		Prosedur:      d.Prosedur.String,
+		Kategori:      d.Kategori.String,
+		Kesulitan:     d.Kesulitan.String,
+		Supervisor:    d.Supervisor.String,
+		Skor:          d.Skor.String,
+		Status:        d.Status,
+		Tanggal:       d.Tanggal.String,
+		Catatan:       d.Catatan.String,
+		ReviziCatatan: d.ReviziCatatan.String,
 	}
 }
 
@@ -525,5 +532,6 @@ func (s *cbdService) toCbdResponse(c *PendidikanCbd) *CbdResponse {
 		Status:        c.Status,
 		Tanggal:       c.Tanggal.String,
 		Catatan:       c.Catatan.String,
+		ReviziCatatan: c.ReviziCatatan.String,
 	}
 }

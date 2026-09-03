@@ -3,7 +3,10 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
+	"be-logbook-ppds/pkg/email"
 	"be-logbook-ppds/pkg/utils"
 )
 
@@ -13,14 +16,20 @@ type Service interface {
 	GetUserByID(ctx context.Context, id int) (*UserResponse, error)
 	UpdateUser(ctx context.Context, id int, req UpdateUserRequest) (*UserResponse, error)
 	DeleteUser(ctx context.Context, id int) error
+
+	RegisterPPDS(ctx context.Context, req CreateRegistrationRequest, selfiePath, strPath, sipPath string) (*UserRegistrationResponse, error)
+	GetRegistrations(ctx context.Context, status string) ([]UserRegistrationResponse, error)
+	ApproveRegistration(ctx context.Context, id int) (*UserResponse, error)
+	RejectRegistration(ctx context.Context, id int, reason string) error
 }
 
 type service struct {
-	repo Repository
+	repo   Repository
+	mailer email.Mailer
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(repo Repository, mailer email.Mailer) Service {
+	return &service{repo: repo, mailer: mailer}
 }
 
 func toUserResponse(u *User) *UserResponse {
@@ -37,14 +46,34 @@ func toUserResponse(u *User) *UserResponse {
 	}
 }
 
+func toRegistrationResponse(reg *UserRegistration) *UserRegistrationResponse {
+	return &UserRegistrationResponse{
+		ID:              reg.ID,
+		Name:            reg.Name,
+		Nik:             reg.Nik,
+		Str:             reg.Str,
+		Sip:             reg.Sip,
+		Username:        reg.Username,
+		Email:           reg.Email,
+		Specialty:       reg.Specialty,
+		ProgramStudi:    reg.ProgramStudi,
+		University:      reg.University,
+		SelfiePath:      reg.SelfiePath,
+		StrFilePath:     reg.StrFilePath,
+		SipFilePath:     reg.SipFilePath,
+		Status:          reg.Status,
+		RejectionReason: reg.RejectionReason,
+		CreatedAt:       reg.CreatedAt,
+	}
+}
+
 func (s *service) CreateUser(ctx context.Context, req CreateUserRequest) (*UserResponse, error) {
-	// Cek apakah username sudah ada
 	existingUser, _ := s.repo.FindByUsername(ctx, req.Username)
 	if existingUser != nil {
 		return nil, errors.New("username sudah digunakan")
 	}
 
-	hashedPassword, err := utils.HashPassword(req.Password)
+	hashedPassword, err := utils.HashPasswordArgon2(req.Password)
 	if err != nil {
 		return nil, errors.New("gagal memproses kata sandi")
 	}
@@ -102,7 +131,7 @@ func (s *service) UpdateUser(ctx context.Context, id int, req UpdateUserRequest)
 	u.ProgramStudi = req.ProgramStudi
 
 	if req.Password != "" {
-		hashed, err := utils.HashPassword(req.Password)
+		hashed, err := utils.HashPasswordArgon2(req.Password)
 		if err != nil {
 			return nil, errors.New("gagal memproses kata sandi baru")
 		}
@@ -123,4 +152,162 @@ func (s *service) DeleteUser(ctx context.Context, id int) error {
 	}
 
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *service) RegisterPPDS(ctx context.Context, req CreateRegistrationRequest, selfiePath, strPath, sipPath string) (*UserRegistrationResponse, error) {
+	// Validasi konfirmasi password
+	if req.Password != req.PasswordConfirmation {
+		return nil, errors.New("kata sandi dan konfirmasi kata sandi tidak cocok")
+	}
+
+	// Cek username belum dipakai
+	existingByUsername, _ := s.repo.FindByUsername(ctx, req.Username)
+	if existingByUsername != nil {
+		return nil, errors.New("username sudah digunakan oleh pengguna lain")
+	}
+
+	// Cek email belum dipakai
+	existingUser, _ := s.repo.FindByEmail(ctx, req.Email)
+	if existingUser != nil {
+		return nil, errors.New("email sudah terdaftar sebagai pengguna aktif")
+	}
+
+	hashedPassword, err := utils.HashPasswordArgon2(req.Password)
+	if err != nil {
+		return nil, errors.New("gagal memproses kata sandi")
+	}
+
+	progStudi := req.ProgramStudi
+	if progStudi == "" {
+		progStudi = req.Specialty
+	}
+
+	reg := &UserRegistration{
+		Name:         req.Name,
+		Nik:          req.Nik,
+		Str:          req.Str,
+		Sip:          req.Sip,
+		Username:     req.Username,
+		Email:        req.Email,
+		Password:     hashedPassword,
+		Specialty:    req.Specialty,
+		ProgramStudi: progStudi,
+		University:   req.University,
+		SelfiePath:   selfiePath,
+		StrFilePath:  strPath,
+		SipFilePath:  sipPath,
+		Status:       "pending",
+	}
+
+	if err := s.repo.CreateRegistration(ctx, reg); err != nil {
+		return nil, err
+	}
+
+	return toRegistrationResponse(reg), nil
+}
+
+func (s *service) GetRegistrations(ctx context.Context, status string) ([]UserRegistrationResponse, error) {
+	regs, err := s.repo.FindAllRegistrations(ctx, status)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []UserRegistrationResponse
+	for _, r := range regs {
+		res = append(res, *toRegistrationResponse(&r))
+	}
+	return res, nil
+}
+
+func (s *service) ApproveRegistration(ctx context.Context, id int) (*UserResponse, error) {
+	reg, err := s.repo.FindRegistrationByID(ctx, id)
+	if err != nil {
+		return nil, errors.New("permintaan registrasi tidak ditemukan")
+	}
+
+	if reg.Status == "approved" {
+		return nil, errors.New("registrasi ini sudah disetujui sebelumnya")
+	}
+
+	// Gunakan username yang sudah dipilih pendaftar; fallback ke NIK/email jika kosong
+	username := strings.TrimSpace(reg.Username)
+	if username == "" {
+		username = strings.TrimSpace(reg.Nik)
+	}
+	if username == "" {
+		username = strings.Split(reg.Email, "@")[0]
+	}
+
+	// Pastikan username unik (sangat jarang collision karena sudah dicek saat daftar)
+	usernameBase := username
+	counter := 1
+	for {
+		existing, _ := s.repo.FindByUsername(ctx, username)
+		if existing == nil {
+			break
+		}
+		username = fmt.Sprintf("%s_%d", usernameBase, counter)
+		counter++
+	}
+
+	progStudi := reg.ProgramStudi
+	if progStudi == "" {
+		progStudi = reg.Specialty
+	}
+
+	nimNip := reg.Nik
+	if nimNip == "" {
+		nimNip = reg.Str
+	}
+
+	// Pakai password yang sudah di-hash saat pendaftaran (bukan default)
+	u := &User{
+		Username:     username,
+		Name:         reg.Name,
+		Email:        reg.Email,
+		Password:     reg.Password,
+		Role:         "residen",
+		NimNip:       nimNip,
+		Jabatan:      "Residen PPDS",
+		ProgramStudi: progStudi,
+	}
+
+	if err := s.repo.Create(ctx, u); err != nil {
+		return nil, errors.New("gagal membuat akun pengguna: " + err.Error())
+	}
+
+	_ = s.repo.UpdateRegistrationStatus(ctx, id, "approved", "")
+
+	// Kirim notifikasi email persetujuan (tanpa menampilkan password)
+	if s.mailer != nil {
+		_ = s.mailer.SendApprovalEmail(reg.Email, reg.Name, username, "")
+	}
+
+	return toUserResponse(u), nil
+}
+
+func (s *service) RejectRegistration(ctx context.Context, id int, reason string) error {
+	reg, err := s.repo.FindRegistrationByID(ctx, id)
+	if err != nil {
+		return errors.New("permintaan registrasi tidak ditemukan")
+	}
+
+	if reg.Status == "approved" {
+		return errors.New("registrasi ini sudah disetujui, tidak dapat ditolak")
+	}
+
+	if strings.TrimSpace(reason) == "" {
+		reason = "Dokumen/identitas tidak memenuhi persyaratan administrasi."
+	}
+
+	if err := s.repo.UpdateRegistrationStatus(ctx, id, "rejected", reason); err != nil {
+		return err
+	}
+
+	// Kirim notifikasi email penolakan
+	if s.mailer != nil {
+		_ = s.mailer.SendRejectionEmail(reg.Email, reg.Name, reason)
+	}
+
+	return nil
 }

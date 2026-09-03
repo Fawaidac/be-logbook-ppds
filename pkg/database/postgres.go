@@ -79,6 +79,20 @@ func RunMigrations(db *sqlx.DB) error {
 		}
 	}
 
+	upSQL17, err := os.ReadFile("migrations/000017_create_user_registrations_table.up.sql")
+	if err == nil && len(upSQL17) > 0 {
+		if _, err := db.Exec(string(upSQL17)); err != nil {
+			log.Printf("Migration 17 execution note: %v", err)
+		}
+	}
+
+	upSQL18, err := os.ReadFile("migrations/000018_add_username_to_user_registrations.up.sql")
+	if err == nil && len(upSQL18) > 0 {
+		if _, err := db.Exec(string(upSQL18)); err != nil {
+			log.Printf("Migration 18 execution note: %v", err)
+		}
+	}
+
 	log.Println("Database migration & seed sync completed successfully")
 	return nil
 }

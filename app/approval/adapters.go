@@ -39,17 +39,18 @@ func (r *TindakanRepoAdapter) UpdateStatus(ctx context.Context, id int, status s
 }
 
 // KegiatanIlmiahRepoAdapter implements KegiatanIlmiahRepository
+// Nama tabel di migration adalah "kegiatan_ilmiah" (tanpa 's')
 type KegiatanIlmiahRepoAdapter struct {
 	DB *sqlx.DB
 }
 
 func (r *KegiatanIlmiahRepoAdapter) FindByStatus(ctx context.Context, status string) ([]KegiatanApprovalItem, error) {
 	query := `
-		SELECT id, user_username, kategori, jenis_kegiatan, topik, status, created_at
-		FROM kegiatan_ilmiahs
-		WHERE status = $1
-		ORDER BY created_at DESC
-	`
+        SELECT id, user_username, COALESCE(ppds_name, '') AS ppds_name, kategori, COALESCE(jenis_kegiatan, '') AS jenis_kegiatan, COALESCE(topik, '') AS topik, COALESCE(tanggal_mulai::TEXT, '') AS tanggal_mulai, COALESCE(lokasi_tipe, '') AS lokasi_tipe, COALESCE(lokasi_detail, '') AS lokasi_detail, COALESCE(sebagai, '') AS sebagai, status, created_at
+        FROM kegiatan_ilmiah
+        WHERE status = $1
+        ORDER BY created_at DESC
+    `
 
 	var items []KegiatanApprovalItem
 	if err := r.DB.SelectContext(ctx, &items, query, status); err != nil && err != sql.ErrNoRows {
@@ -64,19 +65,20 @@ func (r *KegiatanIlmiahRepoAdapter) FindByStatus(ctx context.Context, status str
 }
 
 func (r *KegiatanIlmiahRepoAdapter) UpdateStatus(ctx context.Context, id int, status string) error {
-	query := `UPDATE kegiatan_ilmiahs SET status = $1, updated_at = NOW() WHERE id = $2`
+	query := `UPDATE kegiatan_ilmiah SET status = $1, updated_at = NOW() WHERE id = $2`
 	_, err := r.DB.ExecContext(ctx, query, status, id)
 	return err
 }
 
 // AktivitasKlinikRepoAdapter implements AktivitasKlinikRepository
+// Kolom yang tersedia: tindakan (bukan nama_aktivitas)
 type AktivitasKlinikRepoAdapter struct {
 	DB *sqlx.DB
 }
 
 func (r *AktivitasKlinikRepoAdapter) FindByStatus(ctx context.Context, status string) ([]AktivitasKlinikApprovalItem, error) {
 	query := `
-		SELECT id, user_username, nama_aktivitas, tanggal, status, created_at
+		SELECT id, user_username, tindakan AS nama_aktivitas, tanggal::TEXT AS tanggal, status, created_at
 		FROM aktivitas_kliniks
 		WHERE status = $1
 		ORDER BY created_at DESC
@@ -101,14 +103,16 @@ func (r *AktivitasKlinikRepoAdapter) UpdateStatus(ctx context.Context, id int, s
 }
 
 // PendidikanEvaluasiRepoAdapter implements PendidikanEvaluasiRepository
+// Nama tabel di migration adalah "pendidikan_evaluasi" (tanpa 's')
+// Kolom yang tersedia: kategori (bukan jenis_evaluasi)
 type PendidikanEvaluasiRepoAdapter struct {
 	DB *sqlx.DB
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status string) ([]PendidikanEvaluasiApprovalItem, error) {
 	query := `
-		SELECT id, user_username, jenis_evaluasi, tanggal, status, created_at
-		FROM pendidikan_evaluasis
+		SELECT id, user_username, kategori AS jenis_evaluasi, tanggal, status, created_at
+		FROM pendidikan_evaluasi
 		WHERE status = $1
 		ORDER BY created_at DESC
 	`
@@ -126,7 +130,7 @@ func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) UpdateStatus(ctx context.Context, id int, status string) error {
-	query := `UPDATE pendidikan_evaluasis SET status = $1, updated_at = NOW() WHERE id = $2`
+	query := `UPDATE pendidikan_evaluasi SET status = $1, updated_at = NOW() WHERE id = $2`
 	_, err := r.DB.ExecContext(ctx, query, status, id)
 	return err
 }

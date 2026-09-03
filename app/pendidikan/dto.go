@@ -21,12 +21,13 @@ type KompetensiResponse struct {
 	Status        string `json:"status"`
 	TglVerifikasi string `json:"tgl_verifikasi,omitempty"`
 	Deskripsi     string `json:"deskripsi,omitempty"`
+	ReviziCatatan string `json:"revisi_catatan,omitempty"`
 }
 
 type CreateRotasiRequest struct {
-	Shift       string `json:"shift"`
-	Pembimbing  string `json:"pembimbing"`
-	Catatan     string `json:"catatan"`
+	Stase      string `json:"stase"`
+	Pembimbing string `json:"pembimbing"`
+	Catatan    string `json:"catatan"`
 }
 
 type RotasiResponse struct {
@@ -62,6 +63,7 @@ type MiniCexResponse struct {
 	Status       string `json:"status"`
 	Tanggal      string `json:"tanggal,omitempty"`
 	Catatan      string `json:"catatan,omitempty"`
+	ReviziCatatan string `json:"revisi_catatan,omitempty"`
 }
 
 type CreateDopsRequest struct {
@@ -72,16 +74,17 @@ type CreateDopsRequest struct {
 }
 
 type DopsResponse struct {
-	ID           int    `json:"id"`
-	UserUsername string `json:"user_username,omitempty"`
-	Prosedur     string `json:"prosedur,omitempty"`
-	Kategori     string `json:"kategori,omitempty"`
-	Kesulitan    string `json:"kesulitan,omitempty"`
-	Supervisor   string `json:"supervisor,omitempty"`
-	Skor         string `json:"skor,omitempty"`
-	Status       string `json:"status"`
-	Tanggal      string `json:"tanggal,omitempty"`
-	Catatan      string `json:"catatan,omitempty"`
+	ID            int    `json:"id"`
+	UserUsername  string `json:"user_username,omitempty"`
+	Prosedur      string `json:"prosedur,omitempty"`
+	Kategori      string `json:"kategori,omitempty"`
+	Kesulitan     string `json:"kesulitan,omitempty"`
+	Supervisor    string `json:"supervisor,omitempty"`
+	Skor          string `json:"skor,omitempty"`
+	Status        string `json:"status"`
+	Tanggal       string `json:"tanggal,omitempty"`
+	Catatan       string `json:"catatan,omitempty"`
+	ReviziCatatan string `json:"revisi_catatan,omitempty"`
 }
 
 type CreateSeminarRequest struct {
@@ -105,11 +108,11 @@ type SeminarResponse struct {
 }
 
 type CreateCbdRequest struct {
-	Pasien       string `json:"pasien"`
-	Topik        string `json:"topik"`
-	Kategori     string `json:"kategori"`
-	Pembimbing   string `json:"pembimbing"`
-	Catatan      string `json:"catatan"`
+	Pasien     string `json:"pasien"`
+	Topik      string `json:"topik"`
+	Kategori   string `json:"kategori"`
+	Pembimbing string `json:"pembimbing"`
+	Catatan    string `json:"catatan"`
 }
 
 type CbdResponse struct {
@@ -124,4 +127,5 @@ type CbdResponse struct {
 	Status        string `json:"status"`
 	Tanggal       string `json:"tanggal,omitempty"`
 	Catatan       string `json:"catatan,omitempty"`
+	ReviziCatatan string `json:"revisi_catatan,omitempty"`
 }

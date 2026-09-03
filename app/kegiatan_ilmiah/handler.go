@@ -80,6 +80,13 @@ func (h *Handler) Create(c *gin.Context) {
 			nimNip = nn
 		}
 	}
+	if nimNip == "" {
+		if val, exists := c.Get("nim"); exists {
+			if nn, ok := val.(string); ok {
+				nimNip = nn
+			}
+		}
+	}
 
 	res, err := h.service.CreateKegiatan(c.Request.Context(), req, username, programStudi, ppdsName, nimNip)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 
 	"be-logbook-ppds/app/approval"
 	"be-logbook-ppds/app/auth"
+	"be-logbook-ppds/app/dashboard"
 	"be-logbook-ppds/app/jadwal"
 	"be-logbook-ppds/app/kegiatan_ilmiah"
 	"be-logbook-ppds/app/pendidikan"
@@ -13,6 +14,7 @@ import (
 	"be-logbook-ppds/configs"
 	"be-logbook-ppds/middleware"
 	"be-logbook-ppds/pkg/database"
+	"be-logbook-ppds/pkg/email"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,9 +29,11 @@ func main() {
 		log.Printf("Warning: Database connection failed: %v. Running in fallback mode.", err)
 	}
 
-	// 3. Initialize Repository, Service, and Handler
+	// 3. Initialize Mailer, Repository, Service, and Handler
+	mailer := email.NewMailer(cfg)
+
 	userRepo := user.NewRepository(db)
-	userService := user.NewService(userRepo)
+	userService := user.NewService(userRepo, mailer)
 	userHandler := user.NewHandler(userService)
 
 	authService := auth.NewService(userRepo, cfg)
@@ -77,6 +81,10 @@ func main() {
 	approvalService := approval.NewService(approvalTindakanRepo, approvalKegiatanRepo, approvalAktivitasRepo, approvalPendidikanRepo)
 	approvalHandler := approval.NewHandler(approvalService)
 
+	dashboardRepo := dashboard.NewRepository(db)
+	dashboardService := dashboard.NewService(dashboardRepo, kompetensiRepo)
+	dashboardHandler := dashboard.NewHandler(dashboardService)
+
 	// 4. Setup Router
 	r := gin.Default()
 
@@ -100,6 +108,7 @@ func main() {
 		authGroup := api.Group("/auth")
 		{
 			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/register", userHandler.Register)
 
 			protected := authGroup.Group("")
 			protected.Use(middleware.JWTMiddleware(cfg.JWTSecret))
@@ -109,12 +118,15 @@ func main() {
 			}
 		}
 
-		// User Management CRUD (Khusus role superadmin)
+		// User Management CRUD & Verifikasi (Khusus role admin)
 		userGroup := api.Group("/users")
 		userGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret), middleware.RoleMiddleware("admin"))
 		{
 			userGroup.POST("", userHandler.Create)
 			userGroup.GET("", userHandler.FindAll)
+			userGroup.GET("/registrations", userHandler.GetRegistrations)
+			userGroup.POST("/registrations/:id/approve", userHandler.ApproveRegistration)
+			userGroup.POST("/registrations/:id/reject", userHandler.RejectRegistration)
 			userGroup.GET("/:id", userHandler.FindByID)
 			userGroup.PUT("/:id", userHandler.Update)
 			userGroup.DELETE("/:id", userHandler.Delete)
@@ -238,9 +250,20 @@ func main() {
 			approvalGroup.POST("/pendidikan-evaluasi/:id/approve", approvalHandler.ApprovePendidikanEvaluasi)
 			approvalGroup.POST("/pendidikan-evaluasi/:id/reject", approvalHandler.RejectPendidikanEvaluasi)
 		}
+
+		// Dashboard Endpoints
+		dashboardGroup := api.Group("/dashboard")
+		dashboardGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			dashboardGroup.GET("", dashboardHandler.GetDashboardSummary)
+			dashboardGroup.GET("/laporan", dashboardHandler.GetLaporanSummary)
+		}
 	}
 
-	// 5. Documentation & Testing UI (Tanpa mengotori kode Go)
+	// 5. Documentation & Uploads UI
+	r.Static("/uploads", "./uploads")
+	r.Static("/api/uploads", "./uploads")
+	r.Static("/api/v1/uploads", "./uploads")
 	r.StaticFile("/docs/openapi.yaml", "./docs/openapi.yaml")
 	r.StaticFile("/docs", "./docs/index.html")
 	r.StaticFile("/swagger", "./docs/swagger.html")
