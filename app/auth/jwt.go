@@ -13,7 +13,7 @@ type JWTClaims struct {
 	Name         string `json:"name"`
 	ProgramStudi string `json:"program_studi"`
 	Role         string `json:"role"`
-	Nim		  string `json:"nim"`
+	Nim          string `json:"nim"`
 	jwt.RegisteredClaims
 }
 

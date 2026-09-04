@@ -11,11 +11,10 @@ type LoginData struct {
 	Role         string `json:"role"`
 	Jabatan      string `json:"jabatan"`
 	ProgramStudi string `json:"program_studi"`
-	NimNip		 string `json:"nim_nip"`
+	NimNip       string `json:"nim_nip"`
 }
 
 type LoginResponse struct {
 	User  LoginData `json:"user"`
 	Token string    `json:"token"`
 }
-

@@ -62,4 +62,3 @@ func (h *Handler) Me(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Get profile success", profile)
 }
-

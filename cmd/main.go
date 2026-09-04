@@ -256,6 +256,9 @@ func main() {
 		dashboardGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
 		{
 			dashboardGroup.GET("", dashboardHandler.GetDashboardSummary)
+			dashboardGroup.GET("/residen", dashboardHandler.GetResidentDashboard)
+			dashboardGroup.GET("/admin", middleware.RoleMiddleware("admin"), dashboardHandler.GetAdminDashboard)
+			dashboardGroup.GET("/supervisor", middleware.RoleMiddleware("supervisor"), dashboardHandler.GetSupervisorDashboard)
 			dashboardGroup.GET("/laporan", dashboardHandler.GetLaporanSummary)
 		}
 	}

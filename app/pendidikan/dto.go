@@ -53,16 +53,16 @@ type CreateMiniCexRequest struct {
 }
 
 type MiniCexResponse struct {
-	ID           int    `json:"id"`
-	UserUsername string `json:"user_username,omitempty"`
-	Pasien       string `json:"pasien,omitempty"`
-	Fokus        string `json:"fokus,omitempty"`
-	Kasus        string `json:"kasus,omitempty"`
-	Evaluator    string `json:"evaluator,omitempty"`
-	Skor         string `json:"skor,omitempty"`
-	Status       string `json:"status"`
-	Tanggal      string `json:"tanggal,omitempty"`
-	Catatan      string `json:"catatan,omitempty"`
+	ID            int    `json:"id"`
+	UserUsername  string `json:"user_username,omitempty"`
+	Pasien        string `json:"pasien,omitempty"`
+	Fokus         string `json:"fokus,omitempty"`
+	Kasus         string `json:"kasus,omitempty"`
+	Evaluator     string `json:"evaluator,omitempty"`
+	Skor          string `json:"skor,omitempty"`
+	Status        string `json:"status"`
+	Tanggal       string `json:"tanggal,omitempty"`
+	Catatan       string `json:"catatan,omitempty"`
 	ReviziCatatan string `json:"revisi_catatan,omitempty"`
 }
 

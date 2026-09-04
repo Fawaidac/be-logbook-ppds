@@ -12,6 +12,8 @@ import (
 type Service interface {
 	GetDashboardSummary(ctx context.Context, year int, username, name string) (*DashboardSummaryResponse, error)
 	GetLaporanSummary(ctx context.Context, periode, stase string, username, name string) (*LaporanSummaryResponse, error)
+	GetAdminDashboard(ctx context.Context) (*AdminDashboardResponse, error)
+	GetSupervisorDashboard(ctx context.Context, supervisorName string) (*SupervisorDashboardResponse, error)
 }
 
 type service struct {
@@ -34,6 +36,7 @@ func (s *service) GetDashboardSummary(ctx context.Context, year int, username, n
 	totalTindakan, _ := s.repo.GetTotalTindakan(ctx, username, name)
 	menungguValidasi, _ := s.repo.GetMenungguValidasi(ctx, username, name)
 	perluRevisi, _ := s.repo.GetPerluRevisi(ctx, username, name)
+	capaianStase, _ := s.repo.GetCapaianStase(ctx, username, name)
 	upcomingJadwals, _ := s.repo.GetUpcomingJadwals(ctx, username, name)
 	recentEntries, _ := s.repo.GetRecentEntries(ctx, username, name)
 
@@ -66,6 +69,7 @@ func (s *service) GetDashboardSummary(ctx context.Context, year int, username, n
 		TotalTindakan:    totalTindakan,
 		MenungguValidasi: menungguValidasi,
 		PerluRevisi:      perluRevisi,
+		CapaianStase:     capaianStase,
 		UpcomingJadwals:  upcomingJadwals,
 		RecentEntries:    recentEntries,
 		ChartData: ChartDataResponse{
@@ -158,5 +162,110 @@ func (s *service) GetLaporanSummary(ctx context.Context, periode, stase string, 
 		DisetujuiCount:     disetujuiCount,
 		ResponRate:         responRate,
 		DPJPStats:          rawDpjpStats,
+	}, nil
+}
+
+func (s *service) GetAdminDashboard(ctx context.Context) (*AdminDashboardResponse, error) {
+	totalResiden, _ := s.repo.CountUsersByRole(ctx, "residen")
+	totalSupervisor, _ := s.repo.CountUsersByRole(ctx, "supervisor")
+	totalAdmin, _ := s.repo.CountUsersByRole(ctx, "admin")
+
+	totalRegistrasi, _ := s.repo.CountPendingRegistrations(ctx)
+	totalTindakan, _ := s.repo.GetTotalTindakan(ctx, "", "")
+
+	registrasiList, _ := s.repo.GetPendingRegistrations(ctx, 5)
+
+	aktifTahunIni, _ := s.repo.CountActiveResidenThisYear(ctx, time.Now().Year())
+	persenAktivasi := 0
+	if totalResiden > 0 {
+		persenAktivasi = int(math.Round(float64(aktifTahunIni) / float64(totalResiden) * 100))
+	}
+
+	aktivitasList := make([]AdminAktivitasItem, 0, 4)
+	tindakanCount, _ := s.repo.GetTotalTindakan(ctx, "", "")
+	aktivitasList = append(aktivitasList, AdminAktivitasItem{Kategori: "Tindakan Klinik", Jumlah: int64(tindakanCount)})
+
+	pendidikanCount, _ := s.repo.CountPendidikanRecords(ctx)
+	aktivitasList = append(aktivitasList, AdminAktivitasItem{Kategori: "Pendidikan & Kompetensi", Jumlah: int64(pendidikanCount)})
+
+	kegiatanCount, _ := s.repo.CountKegiatanIlmiahRecords(ctx)
+	aktivitasList = append(aktivitasList, AdminAktivitasItem{Kategori: "Penelitian & Karya Ilmiah", Jumlah: int64(kegiatanCount)})
+
+	jadwalCount, _ := s.repo.CountJadwalRecords(ctx)
+	aktivitasList = append(aktivitasList, AdminAktivitasItem{Kategori: "Jadwal & Bimbingan", Jumlah: int64(jadwalCount)})
+
+	if registrasiList == nil {
+		registrasiList = []AdminRegistrasiItem{}
+	}
+
+	return &AdminDashboardResponse{
+		TotalResiden:    totalResiden,
+		TotalSupervisor: totalSupervisor,
+		TotalAdmin:      totalAdmin,
+		TotalRegistrasi: totalRegistrasi,
+		TotalTindakan:   totalTindakan,
+		PersenAktivasi:  persenAktivasi,
+		RegistrasiList:  registrasiList,
+		AktivitasList:   aktivitasList,
+		RoleDistribution: RoleDistributionResponse{
+			Labels: []string{"Residen", "Supervisor", "Admin"},
+			Values: []int{totalResiden, totalSupervisor, totalAdmin},
+		},
+	}, nil
+}
+
+func (s *service) GetSupervisorDashboard(ctx context.Context, supervisorName string) (*SupervisorDashboardResponse, error) {
+	now := time.Now()
+
+	totalMenunggu, _ := s.repo.CountTindakanByStatus(ctx, "menunggu", supervisorName)
+	totalRevisi, _ := s.repo.CountTindakanByStatus(ctx, "ditolak", supervisorName)
+	totalDisetujui, _ := s.repo.CountTindakanByStatusInMonth(ctx, "disetujui", now.Year(), int(now.Month()), supervisorName)
+	totalResiden, _ := s.repo.CountResidenBySupervisor(ctx, supervisorName)
+
+	// Pertumbuhan disetujui: bulan ini vs bulan lalu
+	prev := now.AddDate(0, -1, 0)
+	disetujuiBulanLalu, _ := s.repo.CountTindakanByStatusInMonth(ctx, "disetujui", prev.Year(), int(prev.Month()), supervisorName)
+	growth := 0
+	if disetujuiBulanLalu > 0 {
+		growth = int(math.Round(float64(totalDisetujui-disetujuiBulanLalu) / float64(disetujuiBulanLalu) * 100))
+	}
+
+	// Chart 6 bulan terakhir (label bulan dalam bahasa Indonesia)
+	indoMonths := []string{"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"}
+	labels := make([]string, 0, 6)
+	chartDisetujui := make([]int, 0, 6)
+	chartMenunggu := make([]int, 0, 6)
+	chartRevisi := make([]int, 0, 6)
+
+	for i := 5; i >= 0; i-- {
+		m := now.AddDate(0, -i, 0)
+		labels = append(labels, indoMonths[int(m.Month())-1])
+
+		d, _ := s.repo.CountTindakanByStatusInMonth(ctx, "disetujui", m.Year(), int(m.Month()), supervisorName)
+		w, _ := s.repo.CountTindakanByStatusInMonth(ctx, "menunggu", m.Year(), int(m.Month()), supervisorName)
+		r, _ := s.repo.CountTindakanByStatusInMonth(ctx, "ditolak", m.Year(), int(m.Month()), supervisorName)
+
+		chartDisetujui = append(chartDisetujui, d)
+		chartMenunggu = append(chartMenunggu, w)
+		chartRevisi = append(chartRevisi, r)
+	}
+
+	residenList, _ := s.repo.GetResidenActivitySummary(ctx, 5, supervisorName)
+	pendingList, _ := s.repo.GetPendingTindakanQueue(ctx, 5, supervisorName)
+
+	return &SupervisorDashboardResponse{
+		TotalMenunggu:   totalMenunggu,
+		TotalDisetujui:  totalDisetujui,
+		TotalRevisi:     totalRevisi,
+		TotalResiden:    totalResiden,
+		DisetujuiGrowth: growth,
+		Chart: SupervisorChartDataResponse{
+			Labels:    labels,
+			Disetujui: chartDisetujui,
+			Menunggu:  chartMenunggu,
+			Revisi:    chartRevisi,
+		},
+		ResidenList: residenList,
+		PendingList: pendingList,
 	}, nil
 }

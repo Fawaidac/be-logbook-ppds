@@ -21,6 +21,23 @@ type Repository interface {
 	GetTotalBimbingan(ctx context.Context, username, name string) (int, error)
 	GetMenungguBimbinganCount(ctx context.Context, username, name string) (int, error)
 	GetDisetujuiBimbinganCount(ctx context.Context, username, name string) (int, error)
+
+	// Admin dashboard
+	GetCapaianStase(ctx context.Context, username, name string) (int, error)
+	CountUsersByRole(ctx context.Context, role string) (int, error)
+	CountPendingRegistrations(ctx context.Context) (int, error)
+	GetPendingRegistrations(ctx context.Context, limit int) ([]AdminRegistrasiItem, error)
+	CountPendidikanRecords(ctx context.Context) (int, error)
+	CountKegiatanIlmiahRecords(ctx context.Context) (int, error)
+	CountJadwalRecords(ctx context.Context) (int, error)
+	CountActiveResidenThisYear(ctx context.Context, year int) (int, error)
+
+	// Supervisor dashboard (scoped: supervisorName kosong = semua)
+	CountTindakanByStatus(ctx context.Context, status, supervisorName string) (int, error)
+	CountTindakanByStatusInMonth(ctx context.Context, status string, year, month int, supervisorName string) (int, error)
+	CountResidenBySupervisor(ctx context.Context, supervisorName string) (int, error)
+	GetResidenActivitySummary(ctx context.Context, limit int, supervisorName string) ([]SupervisorResidenItem, error)
+	GetPendingTindakanQueue(ctx context.Context, limit int, supervisorName string) ([]SupervisorPendingItem, error)
 }
 
 type repository struct {
@@ -186,4 +203,182 @@ func (r *repository) GetDisetujuiBimbinganCount(ctx context.Context, username, n
 	_ = r.db.GetContext(ctx, &tCount, `SELECT COUNT(*) FROM tindakans WHERE status = 'disetujui' AND `+userFilterCond, username, name)
 	_ = r.db.GetContext(ctx, &mCount, `SELECT COUNT(*) FROM pendidikan_mini_cex WHERE status = 'Disetujui' AND `+userFilterCond, username, name)
 	return tCount + mCount, nil
+}
+
+// GetCapaianStase menghitung persentase capaian target kompetensi
+// (SUM achieved_log / SUM target_log) untuk user yang login.
+func (r *repository) GetCapaianStase(ctx context.Context, username, name string) (int, error) {
+	var persen int
+	query := `
+		SELECT COALESCE(ROUND(SUM(achieved_log)::numeric / NULLIF(SUM(target_log), 0) * 100), 0)::int
+		FROM pendidikan_kompetensi
+		WHERE ($1 = '' OR user_username = $1 OR ($2 != '' AND user_username = $2))
+	`
+	err := r.db.GetContext(ctx, &persen, query, username, name)
+	if err != nil {
+		return 0, err
+	}
+	return persen, nil
+}
+
+func (r *repository) CountUsersByRole(ctx context.Context, role string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM users WHERE role::text = $1`
+	err := r.db.GetContext(ctx, &count, query, role)
+	return count, err
+}
+
+func (r *repository) CountPendingRegistrations(ctx context.Context) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM user_registrations WHERE status = 'pending'`
+	err := r.db.GetContext(ctx, &count, query)
+	return count, err
+}
+
+func (r *repository) GetPendingRegistrations(ctx context.Context, limit int) ([]AdminRegistrasiItem, error) {
+	var items []AdminRegistrasiItem
+	query := `
+		SELECT id,
+		       name,
+		       COALESCE(program_studi, '') AS program_studi,
+		       COALESCE(university, '') AS university,
+		       created_at
+		FROM user_registrations
+		WHERE status = 'pending'
+		ORDER BY created_at DESC
+		LIMIT $1
+	`
+	err := r.db.SelectContext(ctx, &items, query, limit)
+	if items == nil {
+		items = []AdminRegistrasiItem{}
+	}
+	return items, err
+}
+
+func (r *repository) CountPendidikanRecords(ctx context.Context) (int, error) {
+	var count int
+	query := `
+		SELECT
+			(SELECT COUNT(*) FROM pendidikan_kompetensi)
+			+ (SELECT COUNT(*) FROM pendidikan_mini_cex)
+			+ (SELECT COUNT(*) FROM pendidikan_dops)
+			+ (SELECT COUNT(*) FROM pendidikan_seminar)
+			+ (SELECT COUNT(*) FROM pendidikan_cbd)
+	`
+	err := r.db.GetContext(ctx, &count, query)
+	return count, err
+}
+
+func (r *repository) CountKegiatanIlmiahRecords(ctx context.Context) (int, error) {
+	var count int
+	query := `
+		SELECT
+			(SELECT COUNT(*) FROM kegiatan_ilmiah)
+			+ (SELECT COUNT(*) FROM bimbingan_penelitian)
+	`
+	err := r.db.GetContext(ctx, &count, query)
+	return count, err
+}
+
+func (r *repository) CountJadwalRecords(ctx context.Context) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM jadwals`
+	err := r.db.GetContext(ctx, &count, query)
+	return count, err
+}
+
+func (r *repository) CountActiveResidenThisYear(ctx context.Context, year int) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(DISTINCT t.user_username)
+		FROM tindakans t
+		JOIN users u ON u.username = t.user_username
+		WHERE u.role::text = 'residen'
+		  AND EXTRACT(YEAR FROM COALESCE(t.procedure_date, t.created_at)) = $1
+	`
+	err := r.db.GetContext(ctx, &count, query, year)
+	return count, err
+}
+
+func (r *repository) CountTindakanByStatus(ctx context.Context, status, supervisorName string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM tindakans WHERE status = $1 AND ($2 = '' OR supervisor_name = $2)`
+	err := r.db.GetContext(ctx, &count, query, status, supervisorName)
+	return count, err
+}
+
+func (r *repository) CountTindakanByStatusInMonth(ctx context.Context, status string, year, month int, supervisorName string) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*) FROM tindakans
+		WHERE status = $1
+		  AND EXTRACT(YEAR FROM COALESCE(procedure_date, created_at)) = $2
+		  AND EXTRACT(MONTH FROM COALESCE(procedure_date, created_at)) = $3
+		  AND ($4 = '' OR supervisor_name = $4)
+	`
+	err := r.db.GetContext(ctx, &count, query, status, year, month, supervisorName)
+	return count, err
+}
+
+// CountResidenBySupervisor menghitung jumlah ppds yang dibimbing supervisor
+// (relasi 1 residen -> 1 supervisor via users.supervisor_name).
+func (r *repository) CountResidenBySupervisor(ctx context.Context, supervisorName string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM users WHERE role::text = 'residen' AND ($1 = '' OR supervisor_name = $1)`
+	err := r.db.GetContext(ctx, &count, query, supervisorName)
+	return count, err
+}
+
+// GetResidenActivitySummary merangkum aktivitas validasi per residen:
+// jumlah logbook berstatus menunggu dan disetujui, diurutkan dari yang
+// paling banyak mengantre. Saat supervisorName terisi, hanya ppds yang
+// dibimbing supervisor tersebut yang ditampilkan.
+func (r *repository) GetResidenActivitySummary(ctx context.Context, limit int, supervisorName string) ([]SupervisorResidenItem, error) {
+	var items []SupervisorResidenItem
+	query := `
+		SELECT u.username,
+		       u.name,
+		       COALESCE(u.program_studi, '') AS prodi,
+		       COALESCE(SUM(CASE WHEN t.status = 'menunggu' THEN 1 ELSE 0 END), 0)::int AS pending_count,
+		       COALESCE(SUM(CASE WHEN t.status = 'disetujui' THEN 1 ELSE 0 END), 0)::int AS disetujui_count
+		FROM users u
+		LEFT JOIN tindakans t ON t.user_username = u.username
+		WHERE u.role::text = 'residen'
+		  AND ($1 = '' OR u.supervisor_name = $1)
+		GROUP BY u.username, u.name, u.program_studi
+		ORDER BY pending_count DESC, disetujui_count DESC
+		LIMIT $2
+	`
+	err := r.db.SelectContext(ctx, &items, query, supervisorName, limit)
+	if items == nil {
+		items = []SupervisorResidenItem{}
+	}
+	return items, err
+}
+
+// GetPendingTindakanQueue mengambil antrian logbook berstatus menunggu
+// terbaru beserta nama residen pemiliknya, difilter berdasarkan DPJP
+// yang memilih supervisor (supervisorName kosong = semua).
+func (r *repository) GetPendingTindakanQueue(ctx context.Context, limit int, supervisorName string) ([]SupervisorPendingItem, error) {
+	var items []SupervisorPendingItem
+	query := `
+		SELECT t.id,
+		       COALESCE(NULLIF(u.name, ''), COALESCE(t.user_username, '')) AS residen_name,
+		       t.plan_procedure AS prosedur,
+		       COALESCE(t.division, '') AS stase,
+		       t.kemandirian,
+		       COALESCE(t.procedure_date, t.created_at) AS procedure_date,
+		       t.created_at
+		FROM tindakans t
+		LEFT JOIN users u ON u.username = t.user_username
+		WHERE t.status = 'menunggu'
+		  AND ($1 = '' OR t.supervisor_name = $1)
+		ORDER BY t.created_at DESC
+		LIMIT $2
+	`
+	err := r.db.SelectContext(ctx, &items, query, supervisorName, limit)
+	if items == nil {
+		items = []SupervisorPendingItem{}
+	}
+	return items, err
 }

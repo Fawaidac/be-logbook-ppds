@@ -1317,6 +1317,98 @@ paths:
         "401":
           description: Unauthorized
 
+  /api/v1/dashboard/residen:
+    get:
+      summary: Get Resident Dashboard (personal)
+      description: Retrieve dashboard summary specifically scoped to the logged-in resident. Data is always filtered by the caller's username regardless of role.
+      tags:
+        - Dashboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+          example: 2026
+      responses:
+        "200":
+          description: Resident dashboard summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data dashboard residen
+                  data:
+                    $ref: "#/components/schemas/DashboardSummaryResponse"
+        "401":
+          description: Unauthorized
+
+  /api/v1/dashboard/admin:
+    get:
+      summary: Get Admin Dashboard
+      description: Retrieve aggregate counts (residen, supervisor, admin, pending registrations, total tindakan), activation percentage, pending registration list, system activity breakdown per module, and role distribution for charts. Admin only.
+      tags:
+        - Dashboard
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Admin dashboard aggregated data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data dashboard admin
+                  data:
+                    $ref: "#/components/schemas/AdminDashboardResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - admin role required
+
+  /api/v1/dashboard/supervisor:
+    get:
+      summary: Get Supervisor Dashboard
+      description: Retrieve logbook validation statistics (menunggu, disetujui bulan ini dengan pertumbuhan vs bulan lalu, perlu revisi), total residen, 6-month validation chart, most active residen list, and latest pending approval queue. Supervisor only.
+      tags:
+        - Dashboard
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Supervisor dashboard aggregated data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data dashboard supervisor
+                  data:
+                    $ref: "#/components/schemas/SupervisorDashboardResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - supervisor role required
+
   /api/v1/dashboard/laporan:
     get:
       summary: Get Report Summary & Statistics
@@ -1433,6 +1525,9 @@ components:
         perlu_revisi:
           type: integer
           example: 1
+        capaian_stase:
+          type: integer
+          example: 76
         upcoming_jadwals:
           type: array
           items:
@@ -1516,6 +1611,162 @@ components:
               items:
                 type: integer
               example: [1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 6]
+
+    AdminDashboardResponse:
+      type: object
+      properties:
+        total_residen:
+          type: integer
+          example: 23
+        total_supervisor:
+          type: integer
+          example: 9
+        total_admin:
+          type: integer
+          example: 3
+        total_registrasi:
+          type: integer
+          example: 5
+        total_tindakan:
+          type: integer
+          example: 12480
+        persen_aktivasi:
+          type: integer
+          example: 78
+        registrasi_list:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              name:
+                type: string
+                example: dr. Fajar Ramadhan
+              program:
+                type: string
+                example: Sp-1 Ilmu Bedah
+              university:
+                type: string
+                example: Universitas Jember
+              created_at:
+                type: string
+                example: "2026-09-02T00:00:00Z"
+        aktivitas_list:
+          type: array
+          items:
+            type: object
+            properties:
+              kategori:
+                type: string
+                example: Tindakan Klinik
+              jumlah:
+                type: integer
+                example: 12480
+        role_distribution:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: string
+              example: ["Residen", "Supervisor", "Admin"]
+            values:
+              type: array
+              items:
+                type: integer
+              example: [23, 9, 3]
+
+    SupervisorDashboardResponse:
+      type: object
+      properties:
+        total_menunggu:
+          type: integer
+          example: 12
+        total_disetujui:
+          type: integer
+          example: 34
+        total_revisi:
+          type: integer
+          example: 4
+        total_residen:
+          type: integer
+          example: 23
+        disetujui_growth:
+          type: integer
+          description: Percentage change of approved items this month vs last month
+          example: 12
+        chart:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: string
+              example: ["Apr", "Mei", "Jun", "Jul", "Agu", "Sep"]
+            disetujui:
+              type: array
+              items:
+                type: integer
+              example: [18, 24, 21, 29, 33, 34]
+            menunggu:
+              type: array
+              items:
+                type: integer
+              example: [6, 8, 5, 9, 7, 12]
+            revisi:
+              type: array
+              items:
+                type: integer
+              example: [3, 2, 5, 2, 4, 4]
+        residen_list:
+          type: array
+          items:
+            type: object
+            properties:
+              username:
+                type: string
+                example: residen01
+              name:
+                type: string
+                example: dr. Ratna Puspita
+              prodi:
+                type: string
+                example: Sp-1 Ilmu Bedah
+              pending:
+                type: integer
+                example: 5
+              disetujui:
+                type: integer
+                example: 48
+        pending_list:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 101
+              residen:
+                type: string
+                example: dr. Ratna Puspita
+              prosedur:
+                type: string
+                example: Apendektomi (01.00)
+              stase:
+                type: string
+                example: Ilmu Bedah
+              kemandirian:
+                type: string
+                enum: [mandiri, dibimbing, observasi]
+                example: dibimbing
+              procedure_date:
+                type: string
+                example: "2026-09-03T00:00:00Z"
+              created_at:
+                type: string
+                example: "2026-09-03T08:15:00Z"
 
     LaporanSummaryResponse:
       type: object

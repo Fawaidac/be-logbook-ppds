@@ -3,6 +3,7 @@ package dashboard
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"be-logbook-ppds/pkg/response"
 
@@ -108,4 +109,53 @@ func (h *Handler) GetLaporanSummary(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Berhasil mengambil data laporan", res)
+}
+
+// GetResidentDashboard mengembalikan ringkasan dashboard khusus residen.
+// Berbeda dengan endpoint /dashboard umum, handler ini SELALU memfilter data
+// berdasarkan username user yang login, sehingga aman untuk role residen.
+func (h *Handler) GetResidentDashboard(c *gin.Context) {
+	yearStr := c.Query("year")
+	year, _ := strconv.Atoi(yearStr)
+	if year == 0 {
+		year = time.Now().Year()
+	}
+
+	username := c.GetString("username")
+	name := c.GetString("name")
+
+	res, err := h.service.GetDashboardSummary(c.Request.Context(), year, username, name)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Berhasil mengambil data dashboard residen", res)
+}
+
+// GetAdminDashboard mengembalikan ringkasan dashboard khusus admin
+// (agregasi seluruh pengguna dan aktivitas sistem).
+func (h *Handler) GetAdminDashboard(c *gin.Context) {
+	res, err := h.service.GetAdminDashboard(c.Request.Context())
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Berhasil mengambil data dashboard admin", res)
+}
+
+// GetSupervisorDashboard mengembalikan ringkasan dashboard khusus supervisor:
+// statistik validasi logbook, perkembangan 6 bulan terakhir, daftar residen
+// paling aktif, dan antrian validasi terbaru.
+func (h *Handler) GetSupervisorDashboard(c *gin.Context) {
+	// Supervisor hanya melihat data ppds yang dibimbingnya;
+	// nama diambil dari klaim JWT (users.name).
+	res, err := h.service.GetSupervisorDashboard(c.Request.Context(), c.GetString("name"))
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Berhasil mengambil data dashboard supervisor", res)
 }

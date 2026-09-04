@@ -57,12 +57,12 @@ type UserRegistrationResponse struct {
 	Sip             string    `json:"sip"`
 	Username        string    `json:"username"`
 	Email           string    `json:"email"`
-	Specialty    string    `json:"specialty"`
-	ProgramStudi string    `json:"program_studi"`
-	University   string    `json:"university"`
-	SelfiePath   string    `json:"selfie_path"`
-	StrFilePath  string    `json:"str_file_path"`
-	SipFilePath  string    `json:"sip_file_path"`
+	Specialty       string    `json:"specialty"`
+	ProgramStudi    string    `json:"program_studi"`
+	University      string    `json:"university"`
+	SelfiePath      string    `json:"selfie_path"`
+	StrFilePath     string    `json:"str_file_path"`
+	SipFilePath     string    `json:"sip_file_path"`
 	Status          string    `json:"status"`
 	RejectionReason string    `json:"rejection_reason,omitempty"`
 	CreatedAt       time.Time `json:"created_at"`

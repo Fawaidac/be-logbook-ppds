@@ -17,8 +17,18 @@ func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
+// supervisorScope menentukan filter antrian approval berdasarkan role:
+// - supervisor  : hanya entri di mana dia dipilih sebagai DPJP/pembimbing
+// - role lain   : kosong (melihat semua, mis. admin)
+func supervisorScope(c *gin.Context) string {
+	if c.GetString("role") == "supervisor" {
+		return c.GetString("name")
+	}
+	return ""
+}
+
 func (h *Handler) GetMenunggu(c *gin.Context) {
-	list, err := h.service.GetMenunggu(c.Request.Context())
+	list, err := h.service.GetMenunggu(c.Request.Context(), supervisorScope(c))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -28,7 +38,7 @@ func (h *Handler) GetMenunggu(c *gin.Context) {
 }
 
 func (h *Handler) GetDisetujui(c *gin.Context) {
-	list, err := h.service.GetDisetujui(c.Request.Context())
+	list, err := h.service.GetDisetujui(c.Request.Context(), supervisorScope(c))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -38,7 +48,7 @@ func (h *Handler) GetDisetujui(c *gin.Context) {
 }
 
 func (h *Handler) GetDitolak(c *gin.Context) {
-	list, err := h.service.GetDitolak(c.Request.Context())
+	list, err := h.service.GetDitolak(c.Request.Context(), supervisorScope(c))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -55,7 +65,7 @@ func (h *Handler) ApproveTindakan(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ApproveTindakan(c.Request.Context(), id); err != nil {
+	if err := h.service.ApproveTindakan(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -71,7 +81,7 @@ func (h *Handler) RejectTindakan(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectTindakan(c.Request.Context(), id); err != nil {
+	if err := h.service.RejectTindakan(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -87,7 +97,7 @@ func (h *Handler) ApproveKegiatanIlmiah(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ApproveKegiatanIlmiah(c.Request.Context(), id); err != nil {
+	if err := h.service.ApproveKegiatanIlmiah(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -103,7 +113,7 @@ func (h *Handler) RejectKegiatanIlmiah(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectKegiatanIlmiah(c.Request.Context(), id); err != nil {
+	if err := h.service.RejectKegiatanIlmiah(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -119,7 +129,7 @@ func (h *Handler) ApproveAktivitasKlinik(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ApproveAktivitasKlinik(c.Request.Context(), id); err != nil {
+	if err := h.service.ApproveAktivitasKlinik(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -135,7 +145,7 @@ func (h *Handler) RejectAktivitasKlinik(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectAktivitasKlinik(c.Request.Context(), id); err != nil {
+	if err := h.service.RejectAktivitasKlinik(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -151,7 +161,7 @@ func (h *Handler) ApprovePendidikanEvaluasi(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ApprovePendidikanEvaluasi(c.Request.Context(), id); err != nil {
+	if err := h.service.ApprovePendidikanEvaluasi(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -167,7 +177,7 @@ func (h *Handler) RejectPendidikanEvaluasi(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectPendidikanEvaluasi(c.Request.Context(), id); err != nil {
+	if err := h.service.RejectPendidikanEvaluasi(c.Request.Context(), id, supervisorScope(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}

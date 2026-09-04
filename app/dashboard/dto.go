@@ -6,6 +6,7 @@ type DashboardSummaryResponse struct {
 	TotalTindakan    int                  `json:"total_tindakan"`
 	MenungguValidasi int                  `json:"menunggu_validasi"`
 	PerluRevisi      int                  `json:"perlu_revisi"`
+	CapaianStase     int                  `json:"capaian_stase"`
 	UpcomingJadwals  []UpcomingJadwalItem `json:"upcoming_jadwals"`
 	RecentEntries    []RecentTindakanItem `json:"recent_entries"`
 	ChartData        ChartDataResponse    `json:"chart_data"`
@@ -69,4 +70,70 @@ type LaporanSummaryResponse struct {
 	DisetujuiCount     int                 `json:"disetujui_count"`
 	ResponRate         int                 `json:"respon_rate"`
 	DPJPStats          []DPJPStatItem      `json:"dpjp_stats"`
+}
+
+type AdminDashboardResponse struct {
+	TotalResiden     int                      `json:"total_residen"`
+	TotalSupervisor  int                      `json:"total_supervisor"`
+	TotalAdmin       int                      `json:"total_admin"`
+	TotalRegistrasi  int                      `json:"total_registrasi"`
+	TotalTindakan    int                      `json:"total_tindakan"`
+	PersenAktivasi   int                      `json:"persen_aktivasi"`
+	RegistrasiList   []AdminRegistrasiItem    `json:"registrasi_list"`
+	AktivitasList    []AdminAktivitasItem     `json:"aktivitas_list"`
+	RoleDistribution RoleDistributionResponse `json:"role_distribution"`
+}
+
+type AdminRegistrasiItem struct {
+	ID           int       `db:"id" json:"id"`
+	Name         string    `db:"name" json:"name"`
+	ProgramStudi string    `db:"program_studi" json:"program"`
+	University   string    `db:"university" json:"university"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+}
+
+type AdminAktivitasItem struct {
+	Kategori string `json:"kategori"`
+	Jumlah   int64  `json:"jumlah"`
+}
+
+type RoleDistributionResponse struct {
+	Labels []string `json:"labels"`
+	Values []int    `json:"values"`
+}
+
+type SupervisorDashboardResponse struct {
+	TotalMenunggu   int                         `json:"total_menunggu"`
+	TotalDisetujui  int                         `json:"total_disetujui"`
+	TotalRevisi     int                         `json:"total_revisi"`
+	TotalResiden    int                         `json:"total_residen"`
+	DisetujuiGrowth int                         `json:"disetujui_growth"`
+	Chart           SupervisorChartDataResponse `json:"chart"`
+	ResidenList     []SupervisorResidenItem     `json:"residen_list"`
+	PendingList     []SupervisorPendingItem     `json:"pending_list"`
+}
+
+type SupervisorChartDataResponse struct {
+	Labels    []string `json:"labels"`
+	Disetujui []int    `json:"disetujui"`
+	Menunggu  []int    `json:"menunggu"`
+	Revisi    []int    `json:"revisi"`
+}
+
+type SupervisorResidenItem struct {
+	Username  string `db:"username" json:"username"`
+	Name      string `db:"name" json:"name"`
+	Prodi     string `db:"prodi" json:"prodi"`
+	Pending   int    `db:"pending_count" json:"pending"`
+	Disetujui int    `db:"disetujui_count" json:"disetujui"`
+}
+
+type SupervisorPendingItem struct {
+	ID            int       `db:"id" json:"id"`
+	Residen       string    `db:"residen_name" json:"residen"`
+	Prosedur      string    `db:"prosedur" json:"prosedur"`
+	Stase         string    `db:"stase" json:"stase"`
+	Kemandirian   string    `db:"kemandirian" json:"kemandirian"`
+	ProcedureDate time.Time `db:"procedure_date" json:"procedure_date"`
+	CreatedAt     time.Time `db:"created_at" json:"created_at"`
 }

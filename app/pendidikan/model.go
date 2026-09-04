@@ -6,38 +6,38 @@ import (
 )
 
 type PendidikanKompetensi struct {
-	ID             int            `db:"id" json:"id"`
-	UserUsername   sql.NullString `db:"user_username" json:"user_username"`
-	Kode           string         `db:"kode" json:"kode"`
-	Nama           sql.NullString `db:"nama" json:"nama"`
-	Domain         sql.NullString `db:"domain" json:"domain"`
-	LevelTarget    string         `db:"level_target" json:"level_target"`
-	TargetLog      int            `db:"target_log" json:"target_log"`
-	AchievedLog    int            `db:"achieved_log" json:"achieved_log"`
-	Evaluator      sql.NullString `db:"evaluator" json:"evaluator"`
-	Status         string         `db:"status" json:"status"`
-	TglVerifikasi  sql.NullString `db:"tgl_verifikasi" json:"tgl_verifikasi"`
-	Deskripsi      sql.NullString `db:"deskripsi" json:"deskripsi"`
-	ReviziCatatan  sql.NullString `db:"revisi_catatan" json:"revisi_catatan"`
-	CreatedAt      time.Time      `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time      `db:"updated_at" json:"updated_at"`
+	ID            int            `db:"id" json:"id"`
+	UserUsername  sql.NullString `db:"user_username" json:"user_username"`
+	Kode          string         `db:"kode" json:"kode"`
+	Nama          sql.NullString `db:"nama" json:"nama"`
+	Domain        sql.NullString `db:"domain" json:"domain"`
+	LevelTarget   string         `db:"level_target" json:"level_target"`
+	TargetLog     int            `db:"target_log" json:"target_log"`
+	AchievedLog   int            `db:"achieved_log" json:"achieved_log"`
+	Evaluator     sql.NullString `db:"evaluator" json:"evaluator"`
+	Status        string         `db:"status" json:"status"`
+	TglVerifikasi sql.NullString `db:"tgl_verifikasi" json:"tgl_verifikasi"`
+	Deskripsi     sql.NullString `db:"deskripsi" json:"deskripsi"`
+	ReviziCatatan sql.NullString `db:"revisi_catatan" json:"revisi_catatan"`
+	CreatedAt     time.Time      `db:"created_at" json:"created_at"`
+	UpdatedAt     time.Time      `db:"updated_at" json:"updated_at"`
 }
 
 type PendidikanRotasi struct {
-	ID             int            `db:"id" json:"id"`
-	UserUsername   sql.NullString `db:"user_username" json:"user_username"`
-	Stase          string         `db:"stase" json:"stase"`
-	Lokasi         sql.NullString `db:"lokasi" json:"lokasi"`
-	Periode        sql.NullString `db:"periode" json:"periode"`
-	Pembimbing     sql.NullString `db:"pembimbing" json:"pembimbing"`
-	Kehadiran      sql.NullString `db:"kehadiran" json:"kehadiran"`
-	Nilai          sql.NullString `db:"nilai" json:"nilai"`
-	Status         string         `db:"status" json:"status"`
-	Tanggal        sql.NullString `db:"tanggal" json:"tanggal"`
-	Catatan        sql.NullString `db:"catatan" json:"catatan"`
-	ReviziCatatan  sql.NullString `db:"revisi_catatan" json:"revisi_catatan"`
-	CreatedAt      time.Time      `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time      `db:"updated_at" json:"updated_at"`
+	ID            int            `db:"id" json:"id"`
+	UserUsername  sql.NullString `db:"user_username" json:"user_username"`
+	Stase         string         `db:"stase" json:"stase"`
+	Lokasi        sql.NullString `db:"lokasi" json:"lokasi"`
+	Periode       sql.NullString `db:"periode" json:"periode"`
+	Pembimbing    sql.NullString `db:"pembimbing" json:"pembimbing"`
+	Kehadiran     sql.NullString `db:"kehadiran" json:"kehadiran"`
+	Nilai         sql.NullString `db:"nilai" json:"nilai"`
+	Status        string         `db:"status" json:"status"`
+	Tanggal       sql.NullString `db:"tanggal" json:"tanggal"`
+	Catatan       sql.NullString `db:"catatan" json:"catatan"`
+	ReviziCatatan sql.NullString `db:"revisi_catatan" json:"revisi_catatan"`
+	CreatedAt     time.Time      `db:"created_at" json:"created_at"`
+	UpdatedAt     time.Time      `db:"updated_at" json:"updated_at"`
 }
 
 type PendidikanMiniCex struct {
