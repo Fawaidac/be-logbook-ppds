@@ -1,17 +1,52 @@
 openapi: 3.0.3
 info:
   title: Logbook PPDS API Specification
-  description: API Documentation & Testing Interface for Logbook PPDS Backend (Golang & Gin).
-  version: 1.0.0
+  description: |
+    API Documentation & Testing Interface for Logbook PPDS Backend (Golang & Gin).
+
+    ## Authentication
+    Most endpoints require a Bearer JWT token obtained from `POST /api/v1/auth/login`.
+
+    ## Role-Based Access
+    | Role | Access Level |
+    |------|-------------|
+    | `residen` | Own data only |
+    | `supervisor` | Own supervisee data, approval |
+    | `admin` | All data, user management, registrations |
+    | `superadmin` | Full access |
+
+    ## File Uploads
+    Uploaded files (selfie, STR, SIP) are served at `/uploads/<filename>` (no `/api` prefix).
+  version: 2.0.0
 servers:
   - url: http://localhost:8080
-    description: Local Server
+    description: Local Development Server
+
+tags:
+  - name: Authentication
+    description: Login, logout, register, and profile endpoints
+  - name: User Management
+    description: CRUD for user accounts and registration approvals (Admin only)
+  - name: Jadwal Management
+    description: FullCalendar schedule events
+  - name: Tindakan Logbook
+    description: Procedure/action logbook entries with role-based filtering
+  - name: Kegiatan Ilmiah
+    description: Scientific activities and research supervision
+  - name: Bimbingan Penelitian
+    description: Research mentoring sessions
+  - name: Pendidikan
+    description: Educational evaluations (Kompetensi, Rotasi, Mini-CEX, DOPS, Seminar, CBD)
+  - name: Approval
+    description: Approval workflow for tindakan, kegiatan ilmiah, and pendidikan evaluasi
+  - name: Dashboard
+    description: Aggregated metrics and analytics per role
 
 paths:
   /api/v1/auth/login:
     post:
       summary: User Login
-      description: Authenticate user using username and password (and optional role).
+      description: Authenticate using username and password. Returns JWT token and user profile.
       tags:
         - Authentication
       requestBody:
@@ -29,16 +64,113 @@ paths:
                   example: residen01
                 password:
                   type: string
-                  example: residen01
+                  example: password123
       responses:
         "200":
-          description: Login Success
+          description: Login successful
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoginSuccessResponse"
         "401":
-          description: Invalid Credentials
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/auth/register:
+    post:
+      summary: Register New PPDS Applicant
+      description: |
+        Submit a PPDS registration request. Accepts `multipart/form-data` with optional file uploads (selfie, STR, SIP).
+        Files are stored at `/uploads/<unique_filename>` — served without `/api` prefix.
+        The registration is reviewed by an admin before a user account is created.
+        The `username` and `password` provided here will be used when the account is activated.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - username
+                - email
+                - password
+                - password_confirmation
+              properties:
+                name:
+                  type: string
+                  example: "dr. Fajar Ramadhan"
+                  description: Full name of the applicant
+                username:
+                  type: string
+                  example: dr.fajar.ramadhan
+                  description: Desired login username (must be unique)
+                nik:
+                  type: string
+                  example: "3509012345678901"
+                str:
+                  type: string
+                  example: STR/2026/001
+                sip:
+                  type: string
+                  example: SIP/2026/001
+                email:
+                  type: string
+                  format: email
+                  example: fajar@ppds.id
+                password:
+                  type: string
+                  format: password
+                  example: secret123
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: secret123
+                  description: Must match `password`
+                specialty:
+                  type: string
+                  example: Ilmu Bedah
+                program_studi:
+                  type: string
+                  example: Sp-1 Ilmu Bedah
+                university:
+                  type: string
+                  example: Universitas Jember
+                selfie:
+                  type: string
+                  format: binary
+                  description: Selfie photo (image file)
+                str_file:
+                  type: string
+                  format: binary
+                  description: STR document file
+                sip_file:
+                  type: string
+                  format: binary
+                  description: SIP document file
+      responses:
+        "201":
+          description: Registration submitted - awaiting admin review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Pendaftaran PPDS berhasil dikirim. Menunggu verifikasi admin."
+                  data:
+                    $ref: "#/components/schemas/UserRegistrationResponse"
+        "400":
+          description: Validation error (missing required fields, password mismatch, duplicate email/username)
           content:
             application/json:
               schema:
@@ -49,46 +181,70 @@ paths:
       summary: User Logout
       tags:
         - Authentication
+      security:
+        - BearerAuth: []
       responses:
         "200":
-          description: Logout Success
+          description: Logout successful
 
   /api/v1/auth/me:
     get:
       summary: Get Logged-in User Profile
+      description: Returns the profile of the currently authenticated user from the JWT token.
       tags:
         - Authentication
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: Profile Details
+          description: User profile
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StandardResponse"
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data profil
+                  data:
+                    $ref: "#/components/schemas/UserProfileResponse"
         "401":
           description: Unauthorized
 
   /api/v1/users:
     get:
-      summary: List All Users (Super Admin Only)
+      summary: List All Users
+      description: Returns all user accounts. Requires admin role.
       tags:
         - User Management
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: List of Users
+          description: List of users
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StandardResponse"
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil daftar pengguna
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserResponse"
         "403":
-          description: Forbidden - Insufficient Role
-
+          description: Forbidden - admin role required
     post:
-      summary: Create New User (Super Admin Only)
+      summary: Create New User
+      description: Directly creates an activated user account. Requires admin role.
       tags:
         - User Management
       security:
@@ -111,7 +267,7 @@ paths:
                   example: dokter02
                 name:
                   type: string
-                  example: dr. Ahmad Fauzi
+                  example: "dr. Ahmad Fauzi"
                 email:
                   type: string
                   example: ahmad@ppds.id
@@ -122,16 +278,152 @@ paths:
                   type: string
                   enum: [residen, supervisor, admin, superadmin]
                   example: residen
+                nim_nip:
+                  type: string
+                  example: "190301001"
                 jabatan:
                   type: string
                   example: Residen Bedah Th.1
+                program_studi:
+                  type: string
+                  example: Sp-1 Ilmu Bedah
       responses:
         "201":
-          description: User Created Successfully
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: Pengguna berhasil dibuat
+                  data:
+                    $ref: "#/components/schemas/UserResponse"
+
+  /api/v1/users/registrations:
+    get:
+      summary: List Registration Requests
+      description: Get all PPDS registration submissions, optionally filtered by status. Requires admin role.
+      tags:
+        - User Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+          example: pending
+          description: Filter by registration status
+      responses:
+        "200":
+          description: List of registration requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil daftar permintaan registrasi
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserRegistrationResponse"
+        "403":
+          description: Forbidden - admin role required
+
+  /api/v1/users/registrations/{id}/approve:
+    post:
+      summary: Approve Registration Request
+      description: |
+        Approves a pending PPDS registration. Creates an activated user account using the
+        username and password provided by the applicant. An approval email is sent automatically.
+        Requires admin role.
+      tags:
+        - User Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 3
+      responses:
+        "200":
+          description: Registration approved and user account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Permintaan registrasi berhasil disetujui. Akun residen telah dibuat."
+                  data:
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Registration not found or already processed
+        "403":
+          description: Forbidden - admin role required
+
+  /api/v1/users/registrations/{id}/reject:
+    post:
+      summary: Reject Registration Request
+      description: Rejects a pending PPDS registration and sends a rejection email. Requires admin role.
+      tags:
+        - User Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 3
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Dokumen STR tidak lengkap atau tidak valid.
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Dokumen STR tidak lengkap atau tidak valid.
+      responses:
+        "200":
+          description: Registration rejected and notification email sent
+        "400":
+          description: Registration not found or already processed
+        "403":
+          description: Forbidden - admin role required
 
   /api/v1/users/{id}:
     get:
-      summary: Get User by ID (Super Admin Only)
+      summary: Get User by ID
       tags:
         - User Management
       security:
@@ -145,12 +437,23 @@ paths:
           example: 1
       responses:
         "200":
-          description: User Details
+          description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/UserResponse"
         "404":
-          description: User Not Found
-
+          description: User not found
     put:
-      summary: Update User (Super Admin Only)
+      summary: Update User
       tags:
         - User Management
       security:
@@ -175,25 +478,32 @@ paths:
               properties:
                 name:
                   type: string
-                  example: dr. Ahmad Fauzi, Sp.B
+                  example: "dr. Ahmad Fauzi, Sp.B"
                 email:
                   type: string
                   example: ahmad.new@ppds.id
                 password:
                   type: string
                   example: newpassword123
+                  description: Leave blank to keep existing password
                 role:
                   type: string
+                  enum: [residen, supervisor, admin, superadmin]
                   example: supervisor
+                nim_nip:
+                  type: string
+                  example: "190301001"
                 jabatan:
                   type: string
                   example: DPJP Bedah Umum
+                program_studi:
+                  type: string
+                  example: Sp-1 Ilmu Bedah
       responses:
         "200":
-          description: User Updated Successfully
-
+          description: User updated successfully
     delete:
-      summary: Delete User (Super Admin Only)
+      summary: Delete User
       tags:
         - User Management
       security:
@@ -207,12 +517,12 @@ paths:
           example: 2
       responses:
         "200":
-          description: User Deleted Successfully
+          description: User deleted successfully
 
   /api/v1/jadwals:
     get:
-      summary: Get FullCalendar Schedule Events
-      description: Get schedule events filtered by start, end date, or type (jaga, bimbingan, rotasi, ujian).
+      summary: Get Schedule Events (FullCalendar)
+      description: Returns events in FullCalendar-compatible format. Filterable by date range and type.
       tags:
         - Jadwal Management
       security:
@@ -222,11 +532,13 @@ paths:
           name: start
           schema:
             type: string
+            format: date
           example: "2026-08-01"
         - in: query
           name: end
           schema:
             type: string
+            format: date
           example: "2026-08-31"
         - in: query
           name: type
@@ -236,8 +548,7 @@ paths:
           example: all
       responses:
         "200":
-          description: Array of FullCalendar Events
-
+          description: Array of FullCalendar event objects
     post:
       summary: Create Schedule Event
       tags:
@@ -280,7 +591,7 @@ paths:
                   example: jaga
       responses:
         "200":
-          description: Event Created Successfully
+          description: Event created successfully
 
   /api/v1/jadwals/{id}:
     put:
@@ -302,18 +613,12 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - title
-                - start
-                - end
-                - type
               properties:
                 title:
                   type: string
                   example: Jaga Malam IGD Shift 1 Update
                 description:
                   type: string
-                  example: Deskripsi perbaikan
                 location:
                   type: string
                   example: IGD Gedung Utama
@@ -331,8 +636,7 @@ paths:
                   example: jaga
       responses:
         "200":
-          description: Event Updated Successfully
-
+          description: Event updated successfully
     delete:
       summary: Delete Schedule Event
       tags:
@@ -348,11 +652,12 @@ paths:
           example: 1
       responses:
         "200":
-          description: Event Deleted Successfully
+          description: Event deleted successfully
 
   /api/v1/jadwals/{id}/dates:
     patch:
-      summary: Update Schedule Dates for Drag & Drop
+      summary: Update Schedule Dates (Drag & Drop)
+      description: Updates only the start/end of an event. Used for FullCalendar drag-and-drop.
       tags:
         - Jadwal Management
       security:
@@ -385,22 +690,52 @@ paths:
                   example: false
       responses:
         "200":
-          description: Event Dates Updated Successfully
+          description: Event dates updated successfully
 
   /api/v1/tindakans:
     get:
       summary: Get Logbook Summary & Tindakan Entries
-      description: Get rekap statistik logbook (total, mandiri, dibimbing, observasi, disetujui, percent) and list of procedure entries.
+      description: |
+        Returns rekap statistics (total_count, mandiri_count, dibimbing_count, observasi_count,
+        disetujui_count, verifikasi_percent) plus all procedure entries. Data is **role-scoped**:
+        - **residen**: only own entries
+        - **supervisor**: entries where `supervisor_name` matches logged-in name; `department` acts as division filter
+        - **admin / superadmin**: all entries; `department` filters by division
       tags:
         - Tindakan Logbook
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: department
+          required: false
+          schema:
+            type: string
+          description: |
+            Filter by department/division (case-insensitive, partial match).
+            Used by admin to scope data to a specific department.
+          example: "Anestesi & ICU"
       responses:
         "200":
-          description: Logbook Summary & Entries List
-
+          description: Logbook summary and entry list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil rekap logbook tindakan
+                  data:
+                    $ref: "#/components/schemas/TindakanSummaryResponse"
+        "401":
+          description: Unauthorized
     post:
       summary: Create New Tindakan (Draft)
+      description: Creates a new procedure entry with status `draft`. Call `POST /{id}/send` to submit for approval.
       tags:
         - Tindakan Logbook
       security:
@@ -422,6 +757,7 @@ paths:
                   example: RM-88406
                 visit_date:
                   type: string
+                  format: date
                   example: "2026-08-07"
                 patient_name:
                   type: string
@@ -432,10 +768,11 @@ paths:
                   example: L
                 birth_date:
                   type: string
+                  format: date
                   example: "1992-05-15"
                 division:
                   type: string
-                  example: Trauma Muskoloskeletal
+                  example: "Anestesi & ICU"
                 diagnosis_label:
                   type: string
                   example: Fraktur Femur Dekstra
@@ -450,6 +787,7 @@ paths:
                   example: Bedah Sentral (OK)
                 procedure_date:
                   type: string
+                  format: date
                   example: "2026-08-07"
                 room_label:
                   type: string
@@ -466,15 +804,30 @@ paths:
                   example: Reduksi anatomis sukses
                 supervisor_name:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
       responses:
         "201":
-          description: Tindakan Draft Created Successfully
+          description: Tindakan draft created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Tindakan berhasil disimpan. Silakan klik 'Kirim' untuk mengirim ke approval DPJP."
+                  tindakan:
+                    $ref: "#/components/schemas/TindakanResponse"
 
   /api/v1/tindakans/getdpjp:
     get:
-      summary: Get DPJP List
-      description: Get list of supervisor names from users table (role = supervisor) for DPJP dropdown. Can be filtered by program_studi.
+      summary: Get DPJP (Supervisor) List
+      description: |
+        Returns names of all users with `role = supervisor`. Optionally filtered by `program_studi`.
+        Used to populate DPJP dropdown when creating a tindakan.
       tags:
         - Tindakan Logbook
       security:
@@ -485,7 +838,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Filter DPJP by program studi (for residen). Leave empty for all DPJP (for admin).
+          description: Filter supervisors by program studi. Leave empty for all.
           example: Ilmu Kesehatan Mata
       responses:
         "200":
@@ -506,15 +859,17 @@ paths:
                     items:
                       type: string
                     example:
-                      - dr. Andi Wijaya, Sp.OT
-                      - dr. Siti Rahma, Sp.OT
+                      - "dr. Andi Wijaya, Sp.OT"
+                      - "dr. Siti Rahma, Sp.OT"
         "401":
           description: Unauthorized
 
   /api/v1/tindakans/by-department:
     get:
       summary: Get Tindakan by Department
-      description: Get all tindakan entries filtered by department/division. Only for admin role.
+      description: |
+        Returns all tindakan entries for a given department. Uses case-insensitive partial-match SQL
+        (e.g., `Anestesi` matches `Anestesi & ICU`). Intended for admin role.
       tags:
         - Tindakan Logbook
       security:
@@ -525,8 +880,8 @@ paths:
           required: true
           schema:
             type: string
-          description: Department name to filter by
-          example: Bedah Umum
+          description: Department/division name (case-insensitive, partial match)
+          example: "Anestesi & ICU"
       responses:
         "200":
           description: List of tindakan for the department
@@ -544,16 +899,19 @@ paths:
                   data:
                     type: array
                     items:
-                      type: object
+                      $ref: "#/components/schemas/TindakanResponse"
         "400":
-          description: Missing department parameter
+          description: Missing required `department` parameter
         "401":
           description: Unauthorized
 
   /api/v1/tindakans/by-supervisor/{name}:
     get:
       summary: Get Tindakan by Supervisor
-      description: Get all tindakan entries filtered by supervisor name and optionally by division. Only for supervisor role.
+      description: |
+        Returns all tindakan entries where `supervisor_name` matches the given name.
+        Uses case-insensitive partial-match SQL. The `:name` path segment should be URL-encoded
+        (spaces as `%20` or `+`). Optionally filtered by `division`.
       tags:
         - Tindakan Logbook
       security:
@@ -564,15 +922,15 @@ paths:
           required: true
           schema:
             type: string
-          description: Supervisor name to filter by
-          example: dr.%20Budi%20Santoso%2C%20Sp.B
+          description: "Supervisor name URL-encoded. E.g: dr.+Budi+Santoso,+Sp.B"
+          example: "dr.+Budi+Santoso,+Sp.B"
         - in: query
           name: division
           required: false
           schema:
             type: string
-          description: Filter by division/department (optional)
-          example: Bedah Umum
+          description: Optional division/department filter (case-insensitive, partial match)
+          example: "Anestesi & ICU"
       responses:
         "200":
           description: List of tindakan for the supervisor
@@ -590,7 +948,9 @@ paths:
                   data:
                     type: array
                     items:
-                      type: object
+                      $ref: "#/components/schemas/TindakanResponse"
+        "400":
+          description: Missing supervisor name parameter
         "401":
           description: Unauthorized
 
@@ -610,8 +970,22 @@ paths:
           example: 1
       responses:
         "200":
-          description: Tindakan Detail
-
+          description: Tindakan detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil detail tindakan
+                  data:
+                    $ref: "#/components/schemas/TindakanResponse"
+        "404":
+          description: Tindakan not found
     put:
       summary: Update Tindakan
       tags:
@@ -656,8 +1030,20 @@ paths:
                   example: Catatan perbaikan
       responses:
         "200":
-          description: Tindakan Updated Successfully
-
+          description: Tindakan updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tindakan berhasil diperbarui.
+                  tindakan:
+                    $ref: "#/components/schemas/TindakanResponse"
     delete:
       summary: Delete Tindakan
       tags:
@@ -673,11 +1059,12 @@ paths:
           example: 1
       responses:
         "200":
-          description: Tindakan Deleted Successfully
+          description: Tindakan deleted successfully
 
   /api/v1/tindakans/{id}/send:
     post:
-      summary: Send Tindakan to DPJP Approval (draft -> menunggu)
+      summary: Submit Tindakan for DPJP Approval
+      description: Changes tindakan status from `draft` to `menunggu`.
       tags:
         - Tindakan Logbook
       security:
@@ -691,19 +1078,7 @@ paths:
           example: 4
       responses:
         "200":
-          description: Sent to DPJP for Verification Successfully
-
-  /api/v1/kegiatan-ilmiah:
-    get:
-      summary: Get Kegiatan Ilmiah (Grouped by Kategori)
-      description: Get all kegiatan ilmiah entries grouped by kategori (simposium, workshop, multidisiplin, ilmiah_lain)
-      tags:
-        - Kegiatan Ilmiah
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Kegiatan Ilmiah Grouped by Kategori
+          description: Sent to DPJP for verification
           content:
             application/json:
               schema:
@@ -711,14 +1086,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
-                  data:
-                    type: object
+                    example: Data Anda berhasil dikirim ke DPJP untuk verifikasi.
+        "400":
+          description: Tindakan not found or already submitted
 
+  /api/v1/kegiatan-ilmiah:
+    get:
+      summary: Get Kegiatan Ilmiah (Grouped by Kategori)
+      tags:
+        - Kegiatan Ilmiah
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Kegiatan ilmiah grouped by kategori (simposium, workshop, multidisiplin, ilmiah_lain)
     post:
       summary: Create New Kegiatan Ilmiah
-      description: Create kegiatan ilmiah. user_username, program_studi, ppds_name, nim_nip diambil dari session user yang login.
+      description: user_username, program_studi, ppds_name, nim_nip are taken from session automatically.
       tags:
         - Kegiatan Ilmiah
       security:
@@ -746,9 +1133,11 @@ paths:
                   example: Perkembangan Terbaru Oftalmologi
                 tanggal_mulai:
                   type: string
+                  format: date
                   example: "2026-08-15"
                 tanggal_selesai:
                   type: string
+                  format: date
                   example: "2026-08-16"
                 lokasi_tipe:
                   type: string
@@ -762,10 +1151,9 @@ paths:
                   example: Peserta / Pembicara
                 pembimbing_1:
                   type: string
-                  example: dr. Bambang Prasetyo, Sp.M
+                  example: "dr. Bambang Prasetyo, Sp.M"
                 pembimbing_2:
                   type: string
-                  example: dr. Siti Rahma, Sp.M
                 pembimbing_3:
                   type: string
                 pembimbing_4:
@@ -787,38 +1175,7 @@ paths:
                   example: Deskripsi kegiatan ilmiah
       responses:
         "201":
-          description: Kegiatan Ilmiah Created Successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  kegiatan:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      user_username:
-                        type: string
-                      program_studi:
-                        type: string
-                      ppds_name:
-                        type: string
-                      nim_nip:
-                        type: string
-                      kategori:
-                        type: string
-                      jenis_kegiatan:
-                        type: string
-                      topik:
-                        type: string
-                      status:
-                        type: string
-                        enum: [pending, disetujui, ditolak]
+          description: Kegiatan ilmiah created successfully
 
   /api/v1/kegiatan-ilmiah/{id}:
     delete:
@@ -836,23 +1193,21 @@ paths:
           example: 1
       responses:
         "200":
-          description: Kegiatan Ilmiah Deleted Successfully
+          description: Kegiatan ilmiah deleted successfully
 
   /api/v1/bimbingans:
     get:
       summary: Get All Bimbingan Penelitian
-      description: Get list of all bimbingan penelitian sessions
       tags:
         - Bimbingan Penelitian
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: List of Bimbingan Penelitian
-
+          description: List of bimbingan penelitian
     post:
       summary: Create New Bimbingan Penelitian
-      description: Create bimbingan penelitian. user_username diambil dari session user yang login.
+      description: user_username is taken from session. sesi_ke is auto-incremented per user.
       tags:
         - Bimbingan Penelitian
       security:
@@ -877,59 +1232,26 @@ paths:
                   example: Pemilihan topik penelitian dan metodologi
                 pembimbing:
                   type: string
-                  example: dr. Hendra Wijaya, M.Kes
+                  example: "dr. Hendra Wijaya, M.Kes"
                 catatan_pembimbing:
                   type: string
                   example: Topik sudah sesuai, lanjutkan ke tahap berikutnya
       responses:
         "201":
-          description: Bimbingan Penelitian Created Successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  bimbingan:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      user_username:
-                        type: string
-                      sesi_ke:
-                        type: string
-                      tahap:
-                        type: string
-                      topik_bimbingan:
-                        type: string
-                      pembimbing:
-                        type: string
-                      catatan_pembimbing:
-                        type: string
-                      status_acc:
-                        type: string
-                      created_at:
-                        type: string
-                      updated_at:
-                        type: string
+          description: Bimbingan penelitian created successfully
 
   /api/v1/pendidikan/kompetensi:
     get:
-      summary: Get All Pendidikan Kompetensi
+      summary: Get All Kompetensi Entries
       tags:
         - Pendidikan
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: List of Kompetensi entries
+        "200":
+          description: List of kompetensi entries
     post:
       summary: Create Kompetensi Entry
-      description: Create kompetensi. user_username diambil dari session.
       tags:
         - Pendidikan
       security:
@@ -958,16 +1280,17 @@ paths:
                   example: 8
                 evaluator:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
                 deskripsi:
                   type: string
                   example: Debridement berhasil dilakukan
       responses:
-        '201':
+        "201":
           description: Kompetensi created successfully
 
+  /api/v1/pendidikan/kompetensi/{id}:
     delete:
-      summary: Delete Kompetensi
+      summary: Delete Kompetensi Entry
       tags:
         - Pendidikan
       security:
@@ -978,23 +1301,23 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
+        "200":
           description: Kompetensi deleted successfully
 
   /api/v1/pendidikan/rotasi:
     get:
-      summary: Get All Pendidikan Rotasi
+      summary: Get All Rotasi Entries
       tags:
         - Pendidikan
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: List of Rotasi entries
+        "200":
+          description: List of rotasi entries
     post:
       summary: Create Rotasi Entry
-      description: Create rotasi. user_username diambil dari session.
       tags:
         - Pendidikan
       security:
@@ -1011,13 +1334,31 @@ paths:
                   example: Dinas Pagi
                 pembimbing:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
                 catatan:
                   type: string
                   example: Presensi harian
       responses:
-        '201':
+        "201":
           description: Rotasi created successfully
+
+  /api/v1/pendidikan/rotasi/{id}:
+    delete:
+      summary: Delete Rotasi Entry
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Rotasi deleted successfully
 
   /api/v1/pendidikan/mini-cex:
     get:
@@ -1027,11 +1368,10 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of Mini-CEX entries
     post:
       summary: Create Mini-CEX Entry
-      description: Create mini-cex. user_username diambil dari session.
       tags:
         - Pendidikan
       security:
@@ -1048,19 +1388,37 @@ paths:
                   example: Pasien Baru
                 fokus:
                   type: string
-                  example: Anamnesis & Pemfis
+                  example: Anamnesis
                 kasus:
                   type: string
                   example: Diagnosis Kasus
                 evaluator:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
                 catatan:
                   type: string
                   example: Pengajuan ujian Mini-CEX
       responses:
-        '201':
+        "201":
           description: Mini-CEX created successfully
+
+  /api/v1/pendidikan/mini-cex/{id}:
+    delete:
+      summary: Delete Mini-CEX Entry
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Mini-CEX deleted successfully
 
   /api/v1/pendidikan/dops:
     get:
@@ -1070,11 +1428,10 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of DOPS entries
     post:
       summary: Create DOPS Entry
-      description: Create DOPS. user_username diambil dari session.
       tags:
         - Pendidikan
       security:
@@ -1094,13 +1451,31 @@ paths:
                   example: Sedang (Medium)
                 supervisor:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
                 catatan:
                   type: string
                   example: Pengajuan observasi DOPS
       responses:
-        '201':
+        "201":
           description: DOPS created successfully
+
+  /api/v1/pendidikan/dops/{id}:
+    delete:
+      summary: Delete DOPS Entry
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: DOPS deleted successfully
 
   /api/v1/pendidikan/seminar:
     get:
@@ -1110,11 +1485,10 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: List of Seminar entries
+        "200":
+          description: List of seminar entries
     post:
       summary: Create Seminar Entry
-      description: Create seminar. user_username diambil dari session.
       tags:
         - Pendidikan
       security:
@@ -1134,13 +1508,31 @@ paths:
                   example: Journal Reading
                 narasumber:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
                 catatan:
                   type: string
                   example: Ringkasan presentasi seminar
       responses:
-        '201':
+        "201":
           description: Seminar created successfully
+
+  /api/v1/pendidikan/seminar/{id}:
+    delete:
+      summary: Delete Seminar Entry
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Seminar deleted successfully
 
   /api/v1/pendidikan/cbd:
     get:
@@ -1150,11 +1542,10 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of CBD entries
     post:
       summary: Create CBD Entry
-      description: Create case discussion. user_username diambil dari session.
       tags:
         - Pendidikan
       security:
@@ -1177,25 +1568,43 @@ paths:
                   example: Trauma Muskoloskeletal
                 pembimbing:
                   type: string
-                  example: dr. Andi Wijaya, Sp.OT
+                  example: "dr. Andi Wijaya, Sp.OT"
                 catatan:
                   type: string
                   example: Poin refleksi klinis
       responses:
-        '201':
+        "201":
           description: CBD created successfully
+
+  /api/v1/pendidikan/cbd/{id}:
+    delete:
+      summary: Delete CBD Entry
+      tags:
+        - Pendidikan
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: CBD deleted successfully
 
   /api/v1/approval/menunggu:
     get:
-      summary: Get Pending Approvals (menunggu)
-      description: Get list of items awaiting approval - Tindakan, Kegiatan Ilmiah, Aktivitas Klinik, Pendidikan Evaluasi
+      summary: Get Pending Approvals
+      description: Returns all items awaiting approval. Requires supervisor or admin role.
       tags:
         - Approval
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: List of pending approvals
+        "200":
+          description: Pending approval items
           content:
             application/json:
               schema:
@@ -1211,26 +1620,24 @@ paths:
   /api/v1/approval/disetujui:
     get:
       summary: Get Approved Items
-      description: Get list of approved items - Tindakan, Kegiatan Ilmiah, Aktivitas Klinik, Pendidikan Evaluasi
       tags:
         - Approval
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: List of approved items
+        "200":
+          description: Approved items
 
   /api/v1/approval/ditolak:
     get:
       summary: Get Rejected Items
-      description: Get list of rejected items needing revision
       tags:
         - Approval
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: List of rejected items
+        "200":
+          description: Rejected/revision items
 
   /api/v1/approval/tindakans/{id}/approve:
     post:
@@ -1245,9 +1652,10 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
-          description: Tindakan approved successfully
+        "200":
+          description: Tindakan approved
 
   /api/v1/approval/tindakans/{id}/reject:
     post:
@@ -1262,8 +1670,9 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
+        "200":
           description: Tindakan marked for revision
 
   /api/v1/approval/kegiatan-ilmiah/{id}/approve:
@@ -1279,9 +1688,10 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
-          description: Kegiatan ilmiah approved successfully
+        "200":
+          description: Kegiatan ilmiah approved
 
   /api/v1/approval/kegiatan-ilmiah/{id}/reject:
     post:
@@ -1296,10 +1706,12 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
+        "200":
           description: Kegiatan ilmiah marked for revision
 
+  /api/v1/approval/pendidikan-evaluasi/{id}/approve:
     post:
       summary: Approve Pendidikan Evaluasi
       tags:
@@ -1312,9 +1724,10 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
-          description: Pendidikan evaluasi approved successfully
+        "200":
+          description: Pendidikan evaluasi approved
 
   /api/v1/approval/pendidikan-evaluasi/{id}/reject:
     post:
@@ -1329,14 +1742,15 @@ paths:
           required: true
           schema:
             type: integer
+          example: 1
       responses:
-        '200':
+        "200":
           description: Pendidikan evaluasi marked for revision
 
   /api/v1/dashboard:
     get:
-      summary: Get Dashboard Overview & Metrics
-      description: Retrieve total actions count, pending validation count, revision count, upcoming schedules, recent logbook entries, and monthly cumulative chart data.
+      summary: Get Dashboard Overview
+      description: Role-scoped dashboard metrics and data.
       tags:
         - Dashboard
       security:
@@ -1353,10 +1767,11 @@ paths:
           required: false
           schema:
             type: string
+          description: Override username (admin only)
           example: residen01
       responses:
         "200":
-          description: Dashboard summary retrieved successfully
+          description: Dashboard summary
           content:
             application/json:
               schema:
@@ -1375,8 +1790,8 @@ paths:
 
   /api/v1/dashboard/residen:
     get:
-      summary: Get Resident Dashboard (personal)
-      description: Retrieve dashboard summary specifically scoped to the logged-in resident. Data is always filtered by the caller's username regardless of role.
+      summary: Get Resident Dashboard (Personal)
+      description: Always filtered by the caller's username regardless of role.
       tags:
         - Dashboard
       security:
@@ -1390,7 +1805,7 @@ paths:
           example: 2026
       responses:
         "200":
-          description: Resident dashboard summary retrieved successfully
+          description: Resident dashboard summary
           content:
             application/json:
               schema:
@@ -1410,14 +1825,14 @@ paths:
   /api/v1/dashboard/admin:
     get:
       summary: Get Admin Dashboard
-      description: Retrieve aggregate counts (residen, supervisor, admin, pending registrations, total tindakan), activation percentage, pending registration list, system activity breakdown per module, and role distribution for charts. Admin only.
+      description: Aggregate counts, pending registrations, system activity breakdown, role distribution. Admin only.
       tags:
         - Dashboard
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: Admin dashboard aggregated data retrieved successfully
+          description: Admin dashboard data
           content:
             application/json:
               schema:
@@ -1439,14 +1854,14 @@ paths:
   /api/v1/dashboard/supervisor:
     get:
       summary: Get Supervisor Dashboard
-      description: Retrieve logbook validation statistics (menunggu, disetujui bulan ini dengan pertumbuhan vs bulan lalu, perlu revisi), total residen, 6-month validation chart, most active residen list, and latest pending approval queue. Supervisor only.
+      description: Validation stats, 6-month chart, most active residen list, latest pending queue. Supervisor only.
       tags:
         - Dashboard
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: Supervisor dashboard aggregated data retrieved successfully
+          description: Supervisor dashboard data
           content:
             application/json:
               schema:
@@ -1467,8 +1882,8 @@ paths:
 
   /api/v1/dashboard/laporan:
     get:
-      summary: Get Report Summary & Statistics
-      description: Retrieve rekap logbook per procedure, kompetensi list, kegiatan ilmiah counts, supervision response rate, and DPJP statistics.
+      summary: Get Report Summary
+      description: Rekap logbook per procedure, kompetensi, kegiatan ilmiah, supervision rate, DPJP stats.
       tags:
         - Dashboard
       security:
@@ -1495,7 +1910,7 @@ paths:
           example: residen01
       responses:
         "200":
-          description: Report summary retrieved successfully
+          description: Report summary
           content:
             application/json:
               schema:
@@ -1518,6 +1933,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT token from POST /api/v1/auth/login
 
   schemas:
     LoginSuccessResponse:
@@ -1532,43 +1948,353 @@ components:
         data:
           type: object
           properties:
-            username:
+            user:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: residen01
+                name:
+                  type: string
+                  example: dr. Ratna Puspita
+                role:
+                  type: string
+                  enum: [residen, supervisor, admin, superadmin]
+                  example: residen
+                jabatan:
+                  type: string
+                  example: Residen Bedah Th.2
+                program_studi:
+                  type: string
+                  example: Sp-1 Ilmu Bedah
+                nim_nip:
+                  type: string
+                  example: "190301001"
+            token:
               type: string
-              example: residen01
-            name:
-              type: string
-              example: dr. Ratna Puspita
-            role:
-              type: string
-              example: residen
-            jabatan:
-              type: string
-              example: Residen Bedah Th.2
-        token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6...
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-    StandardResponse:
+    UserProfileResponse:
       type: object
       properties:
-        code:
-          type: integer
-          example: 200
-        message:
+        username:
           type: string
-          example: Success
-        data:
-          type: object
+          example: residen01
+        name:
+          type: string
+          example: dr. Ratna Puspita
+        role:
+          type: string
+          example: residen
+        jabatan:
+          type: string
+          example: Residen Bedah Th.2
+        program_studi:
+          type: string
+          example: Sp-1 Ilmu Bedah
+        nim_nip:
+          type: string
+          example: "190301001"
 
-    ErrorResponse:
+    UserResponse:
       type: object
       properties:
-        code:
+        id:
           type: integer
-          example: 401
-        message:
+          example: 1
+        username:
           type: string
-          example: Username, kata sandi, atau peran yang dipilih tidak cocok.
+          example: residen01
+        name:
+          type: string
+          example: dr. Ratna Puspita
+        email:
+          type: string
+          example: ratna@ppds.id
+        role:
+          type: string
+          enum: [residen, supervisor, admin, superadmin]
+          example: residen
+        nim_nip:
+          type: string
+          example: "190301001"
+        jabatan:
+          type: string
+          example: Residen Bedah Th.2
+        program_studi:
+          type: string
+          example: Sp-1 Ilmu Bedah
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-08-01T07:00:00Z"
+
+    UserRegistrationResponse:
+      type: object
+      description: Registration submission (before admin approval)
+      properties:
+        id:
+          type: integer
+          example: 5
+        name:
+          type: string
+          example: dr. Fajar Ramadhan
+        nik:
+          type: string
+          example: "3509012345678901"
+        str:
+          type: string
+          example: STR/2026/001
+        sip:
+          type: string
+          example: SIP/2026/001
+        username:
+          type: string
+          example: dr.fajar.ramadhan
+        email:
+          type: string
+          example: fajar@ppds.id
+        specialty:
+          type: string
+          example: Ilmu Bedah
+        program_studi:
+          type: string
+          example: Sp-1 Ilmu Bedah
+        university:
+          type: string
+          example: Universitas Jember
+        selfie_path:
+          type: string
+          example: /uploads/selfie_1725776400000000000_foto.jpg
+          description: "Relative path served without /api prefix. Access via: http://host/uploads/filename"
+        str_file_path:
+          type: string
+          example: /uploads/str_1725776400000000000_str.pdf
+        sip_file_path:
+          type: string
+          example: /uploads/sip_1725776400000000000_sip.pdf
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+          example: pending
+        rejection_reason:
+          type: string
+          example: Dokumen STR tidak valid.
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-09-02T08:00:00Z"
+
+    TindakanResponse:
+      type: object
+      description: A single procedure/action logbook entry
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_username:
+          type: string
+          example: dr. Ratna Puspita
+        mr_number:
+          type: string
+          example: RM-88406
+        visit_date:
+          type: string
+          format: date
+          example: "2026-08-07"
+        patient_name:
+          type: string
+          example: Tn. Ahmad Hidayat
+        gender:
+          type: string
+          enum: [L, P]
+          example: L
+        birth_date:
+          type: string
+          format: date
+          example: "1992-05-15"
+        division:
+          type: string
+          example: "Anestesi & ICU"
+        diagnosis_label:
+          type: string
+          example: Fraktur Femur Dekstra
+        procedure_code:
+          type: string
+          example: ORIF-PLT-01
+        plan_procedure:
+          type: string
+          example: ORIF Plating Femur
+        activity:
+          type: string
+          example: Bedah Sentral (OK)
+        procedure_date:
+          type: string
+          format: date
+          example: "2026-08-07"
+        room:
+          type: string
+          example: OK 2 Central
+        role:
+          type: string
+          example: Operator Utama
+        kemandirian:
+          type: string
+          enum: [mandiri, dibimbing, observasi]
+          example: mandiri
+        clinical_note:
+          type: string
+          example: Reduksi anatomis sukses
+        supervisor_name:
+          type: string
+          example: "dr. Budi Santoso, Sp.B"
+        status:
+          type: string
+          enum: [draft, menunggu, disetujui, ditolak]
+          example: menunggu
+        feedback:
+          type: string
+          example: Lengkapi catatan klinis
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-09-04T11:12:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-09-04T11:12:00Z"
+
+    TindakanSummaryResponse:
+      type: object
+      description: Rekap statistics plus all tindakan entries (role-scoped)
+      properties:
+        total_count:
+          type: integer
+          example: 12
+        mandiri_count:
+          type: integer
+          example: 5
+        dibimbing_count:
+          type: integer
+          example: 4
+        observasi_count:
+          type: integer
+          example: 3
+        disetujui_count:
+          type: integer
+          example: 8
+        verifikasi_percent:
+          type: integer
+          description: Percentage of entries that are disetujui
+          example: 67
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TindakanResponse"
+
+    ApprovalListResponse:
+      type: object
+      properties:
+        tindakan:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              mr_number:
+                type: string
+                example: RM-12345
+              patient_name:
+                type: string
+                example: Budi Santoso
+              diagnosis_label:
+                type: string
+                example: Appendicitis Akut
+              plan_procedure:
+                type: string
+                example: Appendektomi
+              status:
+                type: string
+                example: menunggu
+              created_at:
+                type: string
+                format: date-time
+                example: "2026-08-25T10:00:00Z"
+        kegiatan_ilmiah:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              ppds_name:
+                type: string
+                example: dr. Ratna Puspita
+              kategori:
+                type: string
+                example: simposium
+              jenis_kegiatan:
+                type: string
+                example: Presenter
+              topik:
+                type: string
+                example: Penanganan Trauma Abdomen
+              tanggal_mulai:
+                type: string
+                format: date
+                example: "2026-08-20"
+              lokasi_tipe:
+                type: string
+                example: rsds_fk_unair
+              lokasi_detail:
+                type: string
+                example: Ruang Pertemuan Utama
+              sebagai:
+                type: string
+                example: Pembicara
+              status:
+                type: string
+                example: menunggu
+              created_at:
+                type: string
+                format: date-time
+                example: "2026-08-25T10:00:00Z"
+        pendidikan_evaluasi:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              user_username:
+                type: string
+                example: residen01
+              jenis_evaluasi:
+                type: string
+                enum: [mini_cex, dops, seminar, cbd, kompetensi]
+                example: mini_cex
+              tanggal:
+                type: string
+                format: date
+                example: "2026-08-25"
+              status:
+                type: string
+                example: menunggu
+              created_at:
+                type: string
+                format: date-time
+                example: "2026-08-25T10:00:00Z"
+
     DashboardSummaryResponse:
       type: object
       properties:
@@ -1597,9 +2323,11 @@ components:
                 example: Jaga Malam IGD Shift 2
               start:
                 type: string
+                format: date-time
                 example: "2026-08-25T20:00:00Z"
               end:
                 type: string
+                format: date-time
                 example: "2026-08-26T08:00:00Z"
               all_day:
                 type: boolean
@@ -1620,6 +2348,7 @@ components:
                 example: 1
               procedure_date:
                 type: string
+                format: date-time
                 example: "2026-08-20T00:00:00Z"
               diagnosis_label:
                 type: string
@@ -1632,10 +2361,7 @@ components:
                 example: mandiri
               supervisor_name:
                 type: string
-                example: dr. Andi Wijaya, Sp.OT
-              dpjp_name:
-                type: string
-                example: dr. Andi Wijaya, Sp.OT
+                example: "dr. Andi Wijaya, Sp.OT"
               status:
                 type: string
                 example: disetujui
@@ -1646,27 +2372,27 @@ components:
               type: array
               items:
                 type: string
-              example: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+              example: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
             mandiri:
               type: array
               items:
                 type: integer
-              example: [1, 3, 5, 8, 12, 15, 18, 20, 22, 24, 24, 24]
+              example: [1,3,5,8,12,15,18,20,22,24,24,24]
             dibimbing:
               type: array
               items:
                 type: integer
-              example: [0, 1, 2, 4, 5, 7, 9, 10, 11, 12, 12, 12]
+              example: [0,1,2,4,5,7,9,10,11,12,12,12]
             observasi:
               type: array
               items:
                 type: integer
-              example: [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 5]
+              example: [0,0,1,1,2,3,3,4,4,5,5,5]
             seminar:
               type: array
               items:
                 type: integer
-              example: [1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 6]
+              example: [1,1,2,2,3,4,4,5,5,6,6,6]
 
     AdminDashboardResponse:
       type: object
@@ -1683,6 +2409,7 @@ components:
         total_registrasi:
           type: integer
           example: 5
+          description: Number of pending registration requests
         total_tindakan:
           type: integer
           example: 12480
@@ -1708,6 +2435,7 @@ components:
                 example: Universitas Jember
               created_at:
                 type: string
+                format: date-time
                 example: "2026-09-02T00:00:00Z"
         aktivitas_list:
           type: array
@@ -1727,12 +2455,12 @@ components:
               type: array
               items:
                 type: string
-              example: ["Residen", "Supervisor", "Admin"]
+              example: ["Residen","Supervisor","Admin"]
             values:
               type: array
               items:
                 type: integer
-              example: [23, 9, 3]
+              example: [23,9,3]
 
     SupervisorDashboardResponse:
       type: object
@@ -1751,7 +2479,7 @@ components:
           example: 23
         disetujui_growth:
           type: integer
-          description: Percentage change of approved items this month vs last month
+          description: Percentage change vs last month
           example: 12
         chart:
           type: object
@@ -1760,22 +2488,22 @@ components:
               type: array
               items:
                 type: string
-              example: ["Apr", "Mei", "Jun", "Jul", "Agu", "Sep"]
+              example: ["Apr","Mei","Jun","Jul","Agu","Sep"]
             disetujui:
               type: array
               items:
                 type: integer
-              example: [18, 24, 21, 29, 33, 34]
+              example: [18,24,21,29,33,34]
             menunggu:
               type: array
               items:
                 type: integer
-              example: [6, 8, 5, 9, 7, 12]
+              example: [6,8,5,9,7,12]
             revisi:
               type: array
               items:
                 type: integer
-              example: [3, 2, 5, 2, 4, 4]
+              example: [3,2,5,2,4,4]
         residen_list:
           type: array
           items:
@@ -1819,9 +2547,11 @@ components:
                 example: dibimbing
               procedure_date:
                 type: string
+                format: date-time
                 example: "2026-09-03T00:00:00Z"
               created_at:
                 type: string
+                format: date-time
                 example: "2026-09-03T08:15:00Z"
 
     LaporanSummaryResponse:
@@ -1882,7 +2612,7 @@ components:
             properties:
               name:
                 type: string
-                example: dr. Andi Wijaya, Sp.OT
+                example: "dr. Andi Wijaya, Sp.OT"
               total_logs:
                 type: integer
                 example: 15
@@ -1899,100 +2629,24 @@ components:
                 type: integer
                 example: 80
 
-    ApprovalListResponse:
+    StandardResponse:
       type: object
       properties:
-        tindakan:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-                example: 1
-              user_username:
-                type: string
-                example: residen01
-              mr_number:
-                type: string
-                example: RM-12345
-              patient_name:
-                type: string
-                example: Budi Santoso
-              diagnosis_label:
-                type: string
-                example: Appendicitis Akut
-              plan_procedure:
-                type: string
-                example: Appendektomi
-              status:
-                type: string
-                example: menunggu
-              created_at:
-                type: string
-                example: "2026-08-25T10:00:00Z"
-        kegiatan_ilmiah:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-                example: 1
-              user_username:
-                type: string
-                example: residen01
-              ppds_name:
-                type: string
-                example: dr. Ratna Puspita
-              kategori:
-                type: string
-                example: simposium
-              jenis_kegiatan:
-                type: string
-                example: Presenter
-              topik:
-                type: string
-                example: Penanganan Trauma Abdomen
-              tanggal_mulai:
-                type: string
-                example: "2026-08-20"
-              lokasi_tipe:
-                type: string
-                example: RS
-              lokasi_detail:
-                type: string
-                example: Ruang Pertemuan Utama
-              sebagai:
-                type: string
-                example: Pembicara
-              status:
-                type: string
-                example: menunggu
-              created_at:
-                type: string
-                example: "2026-08-25T10:00:00Z"
-        pendidikan_evaluasi:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-                example: 1
-              user_username:
-                type: string
-                example: residen01
-              jenis_evaluasi:
-                type: string
-                example: mini_cex
-              tanggal:
-                type: string
-                example: "2026-08-25"
-              status:
-                type: string
-                example: Menunggu Validasi
-              created_at:
-                type: string
-                example: "2026-08-25T10:00:00Z"
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          type: object
 
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Format input tidak valid
