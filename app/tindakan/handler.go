@@ -2,7 +2,9 @@ package tindakan
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"be-logbook-ppds/pkg/response"
 
@@ -19,8 +21,21 @@ func NewHandler(service Service) *Handler {
 
 func (h *Handler) GetSummary(c *gin.Context) {
 	userName := loggedName(c)
+	userRole := ""
+	if val, exists := c.Get("role"); exists {
+		if role, ok := val.(string); ok {
+			userRole = role
+		}
+	}
 
-	summary, err := h.service.GetSummary(c.Request.Context(), userName)
+	department := c.Query("department")
+	if unescaped, err := url.QueryUnescape(department); err == nil {
+		department = unescaped
+	}
+	department = strings.ReplaceAll(department, "+", " ")
+	department = strings.TrimSpace(department)
+
+	summary, err := h.service.GetSummary(c.Request.Context(), userName, userRole, department)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -30,13 +45,57 @@ func (h *Handler) GetSummary(c *gin.Context) {
 }
 
 func (h *Handler) GetDPJP(c *gin.Context) {
-	dpjp, err := h.service.GetDPJP(c.Request.Context())
+	programStudi := c.Query("program_studi")
+	dpjp, err := h.service.GetDPJP(c.Request.Context(), programStudi)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	response.Success(c, http.StatusOK, "Berhasil mengambil daftar DPJP", dpjp)
+}
+
+func (h *Handler) GetByDepartment(c *gin.Context) {
+	department := c.Query("department")
+	if department == "" {
+		response.Error(c, http.StatusBadRequest, "Parameter department diperlukan")
+		return
+	}
+	data, err := h.service.GetByDepartment(c.Request.Context(), department)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Berhasil mengambil data tindakan per departemen", data)
+}
+
+func (h *Handler) GetBySupervisor(c *gin.Context) {
+	supervisorName := c.Param("name")
+	if supervisorName == "" {
+		response.Error(c, http.StatusBadRequest, "Parameter supervisor name diperlukan")
+		return
+	}
+	if unescaped, err := url.QueryUnescape(supervisorName); err == nil {
+		supervisorName = unescaped
+	}
+	supervisorName = strings.ReplaceAll(supervisorName, "+", " ")
+	supervisorName = strings.TrimSpace(supervisorName)
+
+	division := c.Query("division")
+	if unescaped, err := url.QueryUnescape(division); err == nil {
+		division = unescaped
+	}
+	division = strings.TrimSpace(division)
+
+	data, err := h.service.GetBySupervisor(c.Request.Context(), supervisorName, division)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if data == nil {
+		data = []TindakanResponse{}
+	}
+	response.Success(c, http.StatusOK, "Berhasil mengambil data tindakan per supervisor", data)
 }
 
 func (h *Handler) GetByID(c *gin.Context) {

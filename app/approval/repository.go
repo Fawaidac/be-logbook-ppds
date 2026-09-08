@@ -16,11 +16,6 @@ type KegiatanIlmiahRepository interface {
 	IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error)
 }
 
-type AktivitasKlinikRepository interface {
-	FindByStatus(ctx context.Context, status, supervisorName string) ([]AktivitasKlinikApprovalItem, error)
-	UpdateStatus(ctx context.Context, id int, status string) error
-	IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error)
-}
 
 type PendidikanEvaluasiRepository interface {
 	FindByStatus(ctx context.Context, status, supervisorName string) ([]PendidikanEvaluasiApprovalItem, error)

@@ -75,10 +75,9 @@ func main() {
 	// Approval Service - wraps existing repos
 	approvalTindakanRepo := &approval.TindakanRepoAdapter{DB: db}
 	approvalKegiatanRepo := &approval.KegiatanIlmiahRepoAdapter{DB: db}
-	approvalAktivitasRepo := &approval.AktivitasKlinikRepoAdapter{DB: db}
 	approvalPendidikanRepo := &approval.PendidikanEvaluasiRepoAdapter{DB: db}
 
-	approvalService := approval.NewService(approvalTindakanRepo, approvalKegiatanRepo, approvalAktivitasRepo, approvalPendidikanRepo)
+	approvalService := approval.NewService(approvalTindakanRepo, approvalKegiatanRepo, approvalPendidikanRepo)
 	approvalHandler := approval.NewHandler(approvalService)
 
 	dashboardRepo := dashboard.NewRepository(db)
@@ -154,6 +153,8 @@ func main() {
 		{
 			tindakanGroup.GET("", tindakanHandler.GetSummary)
 			tindakanGroup.GET("/getdpjp", tindakanHandler.GetDPJP)
+			tindakanGroup.GET("/by-department", tindakanHandler.GetByDepartment)
+			tindakanGroup.GET("/by-supervisor/:name", tindakanHandler.GetBySupervisor)
 			tindakanGroup.GET("/:id", tindakanHandler.GetByID)
 			tindakanGroup.POST("", tindakanHandler.Create)
 			tindakanGroup.PUT("/:id", tindakanHandler.Update)
@@ -243,8 +244,6 @@ func main() {
 			approvalGroup.POST("/kegiatan-ilmiah/:id/reject", approvalHandler.RejectKegiatanIlmiah)
 
 			// Aktivitas Klinik Approval
-			approvalGroup.POST("/aktivitas-klinik/:id/approve", approvalHandler.ApproveAktivitasKlinik)
-			approvalGroup.POST("/aktivitas-klinik/:id/reject", approvalHandler.RejectAktivitasKlinik)
 
 			// Pendidikan Evaluasi Approval
 			approvalGroup.POST("/pendidikan-evaluasi/:id/approve", approvalHandler.ApprovePendidikanEvaluasi)

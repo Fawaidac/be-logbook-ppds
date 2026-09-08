@@ -4,7 +4,6 @@ package approval
 type ApprovalListResponse struct {
 	Tindakan           []TindakanApprovalItem           `json:"tindakan,omitempty"`
 	KegiatanIlmiah     []KegiatanApprovalItem           `json:"kegiatan_ilmiah,omitempty"`
-	AktivitasKlinik    []AktivitasKlinikApprovalItem    `json:"aktivitas_klinik,omitempty"`
 	PendidikanEvaluasi []PendidikanEvaluasiApprovalItem `json:"pendidikan_evaluasi,omitempty"`
 }
 
@@ -46,14 +45,6 @@ type KegiatanApprovalItem struct {
 	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
 }
 
-type AktivitasKlinikApprovalItem struct {
-	ID            int    `db:"id" json:"id"`
-	UserUsername  string `db:"user_username" json:"user_username,omitempty"`
-	NamaAktivitas string `db:"nama_aktivitas" json:"nama_aktivitas,omitempty"`
-	Tanggal       string `db:"tanggal" json:"tanggal,omitempty"`
-	Status        string `db:"status" json:"status"`
-	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
-}
 
 type PendidikanEvaluasiApprovalItem struct {
 	ID            int    `db:"id" json:"id"`

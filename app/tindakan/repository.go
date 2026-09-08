@@ -8,8 +8,10 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, t *Tindakan) error
-	FindDPJP(ctx context.Context) ([]string, error)
+	FindDPJP(ctx context.Context, programStudi string) ([]string, error)
 	FindAll(ctx context.Context, userName string) ([]Tindakan, error)
+	FindAllByDepartment(ctx context.Context, department string) ([]Tindakan, error)
+	FindAllBySupervisor(ctx context.Context, supervisorName string, division string) ([]Tindakan, error)
 	FindByID(ctx context.Context, id int) (*Tindakan, error)
 	Update(ctx context.Context, t *Tindakan) error
 	UpdateStatus(ctx context.Context, id int, status string) error
@@ -47,17 +49,57 @@ func (r *repository) Create(ctx context.Context, t *Tindakan) error {
 	).Scan(&t.ID, &t.CreatedAt, &t.UpdatedAt)
 }
 
-func (r *repository) FindDPJP(ctx context.Context) ([]string, error) {
+func (r *repository) FindDPJP(ctx context.Context, programStudi string) ([]string, error) {
 	var names []string
-	query := `SELECT name FROM users WHERE role = 'supervisor' ORDER BY name ASC`
-	if err := r.db.SelectContext(ctx, &names, query); err != nil {
+	query := `SELECT name FROM users WHERE role = 'supervisor'`
+	args := []interface{}{}
+	if programStudi != "" {
+		query += ` AND program_studi = $1`
+		args = append(args, programStudi)
+	}
+	query += ` ORDER BY name ASC`
+	if err := r.db.SelectContext(ctx, &names, query, args...); err != nil {
 		return nil, err
 	}
 	return names, nil
 }
 
+func (r *repository) FindAllByDepartment(ctx context.Context, department string) ([]Tindakan, error) {
+	list := []Tindakan{}
+	query := `SELECT * FROM tindakans 
+		WHERE LOWER(TRIM(division)) = LOWER(TRIM($1)) 
+		   OR LOWER(division) LIKE '%' || LOWER(TRIM($1)) || '%' 
+		ORDER BY id DESC`
+	if err := r.db.SelectContext(ctx, &list, query, department); err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []Tindakan{}
+	}
+	return list, nil
+}
+
+func (r *repository) FindAllBySupervisor(ctx context.Context, supervisorName string, division string) ([]Tindakan, error) {
+	list := []Tindakan{}
+	query := `SELECT * FROM tindakans 
+		WHERE (LOWER(TRIM(supervisor_name)) = LOWER(TRIM($1)) OR LOWER(supervisor_name) LIKE '%' || LOWER(TRIM($1)) || '%')`
+	args := []interface{}{supervisorName}
+	if division != "" {
+		query += ` AND (LOWER(TRIM(division)) = LOWER(TRIM($2)) OR LOWER(division) LIKE '%' || LOWER(TRIM($2)) || '%')`
+		args = append(args, division)
+	}
+	query += ` ORDER BY id DESC`
+	if err := r.db.SelectContext(ctx, &list, query, args...); err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []Tindakan{}
+	}
+	return list, nil
+}
+
 func (r *repository) FindAll(ctx context.Context, userName string) ([]Tindakan, error) {
-	var list []Tindakan
+	list := []Tindakan{}
 	var err error
 
 	if userName != "" {

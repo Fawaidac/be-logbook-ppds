@@ -474,11 +474,19 @@ paths:
   /api/v1/tindakans/getdpjp:
     get:
       summary: Get DPJP List
-      description: Get list of supervisor names from users table (role = supervisor) for DPJP dropdown.
+      description: Get list of supervisor names from users table (role = supervisor) for DPJP dropdown. Can be filtered by program_studi.
       tags:
         - Tindakan Logbook
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: program_studi
+          required: false
+          schema:
+            type: string
+          description: Filter DPJP by program studi (for residen). Leave empty for all DPJP (for admin).
+          example: Ilmu Kesehatan Mata
       responses:
         "200":
           description: List of DPJP names
@@ -500,6 +508,89 @@ paths:
                     example:
                       - dr. Andi Wijaya, Sp.OT
                       - dr. Siti Rahma, Sp.OT
+        "401":
+          description: Unauthorized
+
+  /api/v1/tindakans/by-department:
+    get:
+      summary: Get Tindakan by Department
+      description: Get all tindakan entries filtered by department/division. Only for admin role.
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: department
+          required: true
+          schema:
+            type: string
+          description: Department name to filter by
+          example: Bedah Umum
+      responses:
+        "200":
+          description: List of tindakan for the department
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data tindakan per departemen
+                  data:
+                    type: array
+                    items:
+                      type: object
+        "400":
+          description: Missing department parameter
+        "401":
+          description: Unauthorized
+
+  /api/v1/tindakans/by-supervisor/{name}:
+    get:
+      summary: Get Tindakan by Supervisor
+      description: Get all tindakan entries filtered by supervisor name and optionally by division. Only for supervisor role.
+      tags:
+        - Tindakan Logbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+          description: Supervisor name to filter by
+          example: dr.%20Budi%20Santoso%2C%20Sp.B
+        - in: query
+          name: division
+          required: false
+          schema:
+            type: string
+          description: Filter by division/department (optional)
+          example: Bedah Umum
+      responses:
+        "200":
+          description: List of tindakan for the supervisor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Berhasil mengambil data tindakan per supervisor
+                  data:
+                    type: array
+                    items:
+                      type: object
         "401":
           description: Unauthorized
 
@@ -1209,41 +1300,6 @@ paths:
         '200':
           description: Kegiatan ilmiah marked for revision
 
-  /api/v1/approval/aktivitas-klinik/{id}/approve:
-    post:
-      summary: Approve Aktivitas Klinik
-      tags:
-        - Approval
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Aktivitas klinik approved successfully
-
-  /api/v1/approval/aktivitas-klinik/{id}/reject:
-    post:
-      summary: Reject Aktivitas Klinik
-      tags:
-        - Approval
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Aktivitas klinik marked for revision
-
-  /api/v1/approval/pendidikan-evaluasi/{id}/approve:
     post:
       summary: Approve Pendidikan Evaluasi
       tags:
@@ -1910,29 +1966,6 @@ components:
               sebagai:
                 type: string
                 example: Pembicara
-              status:
-                type: string
-                example: menunggu
-              created_at:
-                type: string
-                example: "2026-08-25T10:00:00Z"
-        aktivitas_klinik:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-                example: 1
-              user_username:
-                type: string
-                example: residen01
-              nama_aktivitas:
-                type: string
-                example: Jaga Malam
-              tanggal:
-                type: string
-                example: "2026-08-25"
               status:
                 type: string
                 example: menunggu

@@ -5,13 +5,16 @@ import (
 	"database/sql"
 	"errors"
 	"math"
+	"strings"
 	"time"
 )
 
 type Service interface {
 	Create(ctx context.Context, req CreateTindakanRequest, userName string) (*TindakanResponse, error)
-	GetDPJP(ctx context.Context) ([]string, error)
-	GetSummary(ctx context.Context, userName string) (*SummaryResponse, error)
+	GetDPJP(ctx context.Context, programStudi string) ([]string, error)
+	GetSummary(ctx context.Context, userName string, userRole string, department string) (*SummaryResponse, error)
+	GetByDepartment(ctx context.Context, department string) ([]TindakanResponse, error)
+	GetBySupervisor(ctx context.Context, supervisorName string, division string) ([]TindakanResponse, error)
 	GetByID(ctx context.Context, id int) (*TindakanResponse, error)
 	Update(ctx context.Context, id int, req UpdateTindakanRequest) (*TindakanResponse, error)
 	Send(ctx context.Context, id int) error
@@ -88,17 +91,59 @@ func (s *service) Create(ctx context.Context, req CreateTindakanRequest, userNam
 	return s.toResponse(t), nil
 }
 
-func (s *service) GetDPJP(ctx context.Context) ([]string, error) {
-	return s.repo.FindDPJP(ctx)
+func (s *service) GetDPJP(ctx context.Context, programStudi string) ([]string, error) {
+	return s.repo.FindDPJP(ctx, programStudi)
 }
 
-func (s *service) GetSummary(ctx context.Context, userName string) (*SummaryResponse, error) {
-	list, err := s.repo.FindAll(ctx, userName)
+func (s *service) GetByDepartment(ctx context.Context, department string) ([]TindakanResponse, error) {
+	list, err := s.repo.FindAllByDepartment(ctx, department)
+	if err != nil {
+		return nil, err
+	}
+	res := []TindakanResponse{}
+	for _, item := range list {
+		res = append(res, *s.toResponse(&item))
+	}
+	return res, nil
+}
+
+func (s *service) GetBySupervisor(ctx context.Context, supervisorName string, division string) ([]TindakanResponse, error) {
+	list, err := s.repo.FindAllBySupervisor(ctx, supervisorName, division)
+	if err != nil {
+		return nil, err
+	}
+	res := []TindakanResponse{}
+	for _, item := range list {
+		res = append(res, *s.toResponse(&item))
+	}
+	return res, nil
+}
+
+func (s *service) GetSummary(ctx context.Context, userName string, userRole string, department string) (*SummaryResponse, error) {
+	var list []Tindakan
+	var err error
+
+	role := strings.ToLower(strings.TrimSpace(userRole))
+
+	if role == "admin" || role == "superadmin" {
+		if department != "" {
+			list, err = s.repo.FindAllByDepartment(ctx, department)
+		} else {
+			list, err = s.repo.FindAll(ctx, "")
+		}
+	} else if role == "supervisor" {
+		// Supervisor: filter by supervisor_name and optionally division
+		list, err = s.repo.FindAllBySupervisor(ctx, userName, department)
+	} else {
+		// Residen: filter by user_username
+		list, err = s.repo.FindAll(ctx, userName)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	var entries []TindakanResponse
+	entries := []TindakanResponse{}
 	totalCount := len(list)
 	mandiriCount := 0
 	dibimbingCount := 0

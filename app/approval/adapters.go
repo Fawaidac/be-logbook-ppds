@@ -139,79 +139,24 @@ func (r *KegiatanIlmiahRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id 
 	return exists, err
 }
 
-// AktivitasKlinikRepoAdapter implements AktivitasKlinikRepository
-// Kolom yang tersedia: tindakan (bukan nama_aktivitas)
-type AktivitasKlinikRepoAdapter struct {
-	DB *sqlx.DB
-}
-
-func (r *AktivitasKlinikRepoAdapter) FindByStatus(ctx context.Context, status, supervisorName string) ([]AktivitasKlinikApprovalItem, error) {
-	// Subquery agar PostgreSQL mengembalikan tipe TEXT, bukan DATE/TIMESTAMP asli.
-	query := `
-		SELECT id, user_username, nama_aktivitas, tanggal, status, created_at
-		FROM (
-			SELECT id,
-			       COALESCE(user_username, '')::TEXT AS user_username,
-			       COALESCE(tindakan, '')::TEXT AS nama_aktivitas,
-			       COALESCE(tanggal::TEXT, '')::TEXT AS tanggal,
-			       COALESCE(status::TEXT, '')::TEXT AS status,
-			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
-			FROM aktivitas_kliniks
-			WHERE status = $1::enum_status_aktivitas
-			  AND ($2 = '' OR COALESCE(supervisor, '') = $2)
-		) sub
-		ORDER BY created_at DESC
-	`
-
-	var items []AktivitasKlinikApprovalItem
-	if err := r.DB.SelectContext(ctx, &items, query, status, supervisorName); err != nil && err != sql.ErrNoRows {
-		return []AktivitasKlinikApprovalItem{}, err
-	}
-
-	if items == nil {
-		items = []AktivitasKlinikApprovalItem{}
-	}
-
-	return items, nil
-}
-
-func (r *AktivitasKlinikRepoAdapter) UpdateStatus(ctx context.Context, id int, status string) error {
-	query := `UPDATE aktivitas_kliniks SET status = $1::enum_status_aktivitas, updated_at = NOW() WHERE id = $2`
-	_, err := r.DB.ExecContext(ctx, query, status, id)
-	return err
-}
-
-// IsOwnedBySupervisor memeriksa apakah supervisor terkait tercatat
-// pada aktivitas klinik tersebut.
-func (r *AktivitasKlinikRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
-	var exists bool
-	err := r.DB.GetContext(ctx, &exists,
-		`SELECT EXISTS(SELECT 1 FROM aktivitas_kliniks WHERE id = $1 AND COALESCE(supervisor, '') = $2)`,
-		id, supervisorName)
-	return exists, err
-}
-
 // PendidikanEvaluasiRepoAdapter implements PendidikanEvaluasiRepository
-// Nama tabel di migration adalah "pendidikan_evaluasi" (tanpa 's')
-// Kolom yang tersedia: kategori (bukan jenis_evaluasi)
 type PendidikanEvaluasiRepoAdapter struct {
 	DB *sqlx.DB
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status, supervisorName string) ([]PendidikanEvaluasiApprovalItem, error) {
-	// Subquery agar PostgreSQL mengembalikan tipe TEXT, bukan TIMESTAMP asli.
 	query := `
 		SELECT id, user_username, jenis_evaluasi, tanggal, status, created_at
 		FROM (
 			SELECT id,
 			       COALESCE(user_username, '')::TEXT AS user_username,
-			       COALESCE(kategori, '')::TEXT AS jenis_evaluasi,
-			       COALESCE(tanggal, '')::TEXT AS tanggal,
+			       COALESCE(jenis_evaluasi, '')::TEXT AS jenis_evaluasi,
+			       COALESCE(tanggal::TEXT, '')::TEXT AS tanggal,
 			       COALESCE(status::TEXT, '')::TEXT AS status,
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
-			FROM pendidikan_evaluasi
-			WHERE status = $1
-			  AND ($2 = '' OR COALESCE(supervisor, '') = $2 OR COALESCE(evaluator, '') = $2 OR COALESCE(pembimbing, '') = $2)
+			FROM pendidikan_evaluasis
+			WHERE status = $1::status_pendidikan_enum
+			  AND ($2 = '' OR COALESCE(supervisor_name, '') = $2)
 		) sub
 		ORDER BY created_at DESC
 	`
@@ -229,21 +174,16 @@ func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) UpdateStatus(ctx context.Context, id int, status string) error {
-	query := `UPDATE pendidikan_evaluasi SET status = $1, updated_at = NOW() WHERE id = $2`
+	query := `UPDATE pendidikan_evaluasis SET status = $1::status_pendidikan_enum, updated_at = NOW() WHERE id = $2`
 	_, err := r.DB.ExecContext(ctx, query, status, id)
 	return err
 }
 
-// IsOwnedBySupervisor memeriksa apakah supervisor terkait tercatat sebagai
-// supervisor, evaluator, atau pembimbing pada evaluasi pendidikan tersebut.
 func (r *PendidikanEvaluasiRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
 	var exists bool
 	err := r.DB.GetContext(ctx, &exists,
-		`SELECT EXISTS(
-			SELECT 1 FROM pendidikan_evaluasi
-			WHERE id = $1
-			  AND (COALESCE(supervisor, '') = $2 OR COALESCE(evaluator, '') = $2 OR COALESCE(pembimbing, '') = $2)
-		)`,
+		`SELECT EXISTS(SELECT 1 FROM pendidikan_evaluasis WHERE id = $1 AND COALESCE(supervisor_name, '') = $2)`,
 		id, supervisorName)
 	return exists, err
 }
+

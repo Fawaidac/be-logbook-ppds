@@ -121,37 +121,6 @@ func (h *Handler) RejectKegiatanIlmiah(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Kegiatan ilmiah ditandai perlu revisi", nil)
 }
 
-func (h *Handler) ApproveAktivitasKlinik(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "ID tidak valid")
-		return
-	}
-
-	if err := h.service.ApproveAktivitasKlinik(c.Request.Context(), id, supervisorScope(c)); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Aktivitas klinik berhasil disetujui", nil)
-}
-
-func (h *Handler) RejectAktivitasKlinik(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "ID tidak valid")
-		return
-	}
-
-	if err := h.service.RejectAktivitasKlinik(c.Request.Context(), id, supervisorScope(c)); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Aktivitas klinik ditandai perlu revisi", nil)
-}
 
 func (h *Handler) ApprovePendidikanEvaluasi(c *gin.Context) {
 	idStr := c.Param("id")
