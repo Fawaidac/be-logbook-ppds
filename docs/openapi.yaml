@@ -79,6 +79,64 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/v1/auth/pre-register:
+    post:
+      summary: Validate Step-1 PPDS Registration Credentials
+      description: |
+        Validates step 1 registration data before proceeding to file uploads.
+        Checks password matching and verifies username and email uniqueness.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - password_confirmation
+              properties:
+                username:
+                  type: string
+                  example: dr.fajar.ramadhan
+                email:
+                  type: string
+                  format: email
+                  example: fajar@ppds.id
+                password:
+                  type: string
+                  format: password
+                  example: secret123
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: secret123
+      responses:
+        "200":
+          description: Step 1 validation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Validasi berhasil, dapat melanjutkan ke langkah berikutnya
+                  data:
+                    type: "null"
+        "400":
+          description: Validation error (username taken, email taken, or password mismatch)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/v1/auth/register:
     post:
       summary: Register New PPDS Applicant

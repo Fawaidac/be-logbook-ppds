@@ -29,8 +29,9 @@ type KegiatanIlmiah struct {
 	Penguji3       sql.NullString `db:"penguji_3" json:"penguji_3"`
 	Penguji4       sql.NullString `db:"penguji_4" json:"penguji_4"`
 	Penguji5       sql.NullString `db:"penguji_5" json:"penguji_5"`
-	Deskripsi      sql.NullString `db:"deskripsi" json:"deskripsi"`
-	LampiranPath   sql.NullString `db:"lampiran_path" json:"lampiran_path"`
+	Deskripsi         sql.NullString `db:"deskripsi" json:"deskripsi"`
+	CatatanPembimbing sql.NullString `db:"catatan_pembimbing" json:"catatan_pembimbing"`
+	LampiranPath      sql.NullString `db:"lampiran_path" json:"lampiran_path"`
 	Status         string         `db:"status" json:"status"`
 	CreatedAt      time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time      `db:"updated_at" json:"updated_at"`

@@ -1,25 +1,25 @@
 package kegiatan_ilmiah
 
 type CreateKegiatanIlmiahRequest struct {
-	Kategori       string `json:"kategori" binding:"required,oneof=simposium workshop multidisiplin ilmiah_lain"`
-	JenisKegiatan  string `json:"jenis_kegiatan" binding:"required"`
-	Topik          string `json:"topik" binding:"required"`
-	TanggalMulai   string `json:"tanggal_mulai"`
-	TanggalSelesai string `json:"tanggal_selesai"`
-	LokasiTipe     string `json:"lokasi_tipe" binding:"oneof=rsds_fk_unair luar_rsds_fk_unair"`
-	LokasiDetail   string `json:"lokasi_detail"`
-	Sebagai        string `json:"sebagai"`
-	Pembimbing1    string `json:"pembimbing_1"`
-	Pembimbing2    string `json:"pembimbing_2"`
-	Pembimbing3    string `json:"pembimbing_3"`
-	Pembimbing4    string `json:"pembimbing_4"`
-	Pembimbing5    string `json:"pembimbing_5"`
-	Penguji1       string `json:"penguji_1"`
-	Penguji2       string `json:"penguji_2"`
-	Penguji3       string `json:"penguji_3"`
-	Penguji4       string `json:"penguji_4"`
-	Penguji5       string `json:"penguji_5"`
-	Deskripsi      string `json:"deskripsi"`
+	Kategori       string `json:"kategori" form:"kategori" binding:"required,oneof=simposium workshop multidisiplin ilmiah_lain"`
+	JenisKegiatan  string `json:"jenis_kegiatan" form:"jenis_kegiatan" binding:"required"`
+	Topik          string `json:"topik" form:"topik" binding:"required"`
+	TanggalMulai   string `json:"tanggal_mulai" form:"tanggal_mulai"`
+	TanggalSelesai string `json:"tanggal_selesai" form:"tanggal_selesai"`
+	LokasiTipe     string `json:"lokasi_tipe" form:"lokasi_tipe" binding:"omitempty,oneof=rsds_fk_unair luar_rsds_fk_unair"`
+	LokasiDetail   string `json:"lokasi_detail" form:"lokasi_detail"`
+	Sebagai        string `json:"sebagai" form:"sebagai"`
+	Pembimbing1    string `json:"pembimbing_1" form:"pembimbing_1"`
+	Pembimbing2    string `json:"pembimbing_2" form:"pembimbing_2"`
+	Pembimbing3    string `json:"pembimbing_3" form:"pembimbing_3"`
+	Pembimbing4    string `json:"pembimbing_4" form:"pembimbing_4"`
+	Pembimbing5    string `json:"pembimbing_5" form:"pembimbing_5"`
+	Penguji1       string `json:"penguji_1" form:"penguji_1"`
+	Penguji2       string `json:"penguji_2" form:"penguji_2"`
+	Penguji3       string `json:"penguji_3" form:"penguji_3"`
+	Penguji4       string `json:"penguji_4" form:"penguji_4"`
+	Penguji5       string `json:"penguji_5" form:"penguji_5"`
+	Deskripsi      string `json:"deskripsi" form:"deskripsi"`
 }
 
 type CreateBimbinganRequest struct {
@@ -53,8 +53,9 @@ type KegiatanIlmiahResponse struct {
 	Penguji3       string `json:"penguji_3"`
 	Penguji4       string `json:"penguji_4"`
 	Penguji5       string `json:"penguji_5"`
-	Deskripsi      string `json:"deskripsi"`
-	LampiranPath   string `json:"lampiran_path"`
+	Deskripsi         string `json:"deskripsi"`
+	CatatanPembimbing string `json:"catatan_pembimbing,omitempty"`
+	LampiranPath      string `json:"lampiran_path"`
 	Status         string `json:"status"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`

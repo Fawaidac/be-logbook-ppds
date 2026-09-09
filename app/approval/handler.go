@@ -81,7 +81,12 @@ func (h *Handler) RejectTindakan(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectTindakan(c.Request.Context(), id, supervisorScope(c)); err != nil {
+	var req RejectRequest
+	if err := c.ShouldBind(&req); err != nil {
+		req = RejectRequest{Catatan: ""}
+	}
+
+	if err := h.service.RejectTindakan(c.Request.Context(), id, supervisorScope(c), req.Catatan); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -113,7 +118,12 @@ func (h *Handler) RejectKegiatanIlmiah(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectKegiatanIlmiah(c.Request.Context(), id, supervisorScope(c)); err != nil {
+	var req RejectRequest
+	if err := c.ShouldBind(&req); err != nil {
+		req = RejectRequest{Catatan: ""}
+	}
+
+	if err := h.service.RejectKegiatanIlmiah(c.Request.Context(), id, supervisorScope(c), req.Catatan); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -146,7 +156,12 @@ func (h *Handler) RejectPendidikanEvaluasi(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RejectPendidikanEvaluasi(c.Request.Context(), id, supervisorScope(c)); err != nil {
+	var req RejectRequest
+	if err := c.ShouldBind(&req); err != nil {
+		req = RejectRequest{Catatan: ""}
+	}
+
+	if err := h.service.RejectPendidikanEvaluasi(c.Request.Context(), id, supervisorScope(c), req.Catatan); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -21,7 +21,7 @@ func (r *TindakanRepoAdapter) FindByStatus(ctx context.Context, status, supervis
 		SELECT id, user_username, mr_number, visit_date, patient_name, gender, birth_date,
 		       division, diagnosis_label, procedure_code, plan_procedure, activity,
 		       procedure_date, room, role_label, kemandirian, clinical_note,
-		       supervisor_name, status, created_at
+		       supervisor_name, feedback, status, created_at
 		FROM (
 			SELECT id,
 			       COALESCE(user_username, '')::TEXT AS user_username,
@@ -41,6 +41,7 @@ func (r *TindakanRepoAdapter) FindByStatus(ctx context.Context, status, supervis
 			       COALESCE(kemandirian::TEXT, '')::TEXT AS kemandirian,
 			       COALESCE(clinical_note, '')::TEXT AS clinical_note,
 			       COALESCE(supervisor_name, '')::TEXT AS supervisor_name,
+			       COALESCE(feedback, '')::TEXT AS feedback,
 			       COALESCE(status::TEXT, '')::TEXT AS status,
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
 			FROM tindakans
@@ -70,6 +71,12 @@ func (r *TindakanRepoAdapter) UpdateStatus(ctx context.Context, id int, status s
 	return err
 }
 
+func (r *TindakanRepoAdapter) UpdateStatusWithNote(ctx context.Context, id int, status string, catatan string) error {
+	query := `UPDATE tindakans SET status = $1::status_enum, feedback = $3, updated_at = NOW() WHERE id = $2`
+	_, err := r.DB.ExecContext(ctx, query, status, id, catatan)
+	return err
+}
+
 // IsOwnedBySupervisor memeriksa apakah supervisor terkait adalah DPJP
 // yang dipilih pada tindakan tersebut.
 func (r *TindakanRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
@@ -90,7 +97,7 @@ func (r *KegiatanIlmiahRepoAdapter) FindByStatus(ctx context.Context, status, su
 	// Subquery agar PostgreSQL mengembalikan tipe TEXT, bukan DATE/TIMESTAMP asli.
 	query := `
 		SELECT id, user_username, ppds_name, kategori, jenis_kegiatan, topik,
-		       tanggal_mulai, lokasi_tipe, lokasi_detail, sebagai, status, created_at
+		       tanggal_mulai, lokasi_tipe, lokasi_detail, sebagai, catatan_pembimbing, status, created_at
 		FROM (
 			SELECT id,
 			       COALESCE(user_username, '')::TEXT AS user_username,
@@ -102,6 +109,7 @@ func (r *KegiatanIlmiahRepoAdapter) FindByStatus(ctx context.Context, status, su
 			       COALESCE(lokasi_tipe, '')::TEXT AS lokasi_tipe,
 			       COALESCE(lokasi_detail, '')::TEXT AS lokasi_detail,
 			       COALESCE(sebagai, '')::TEXT AS sebagai,
+			       COALESCE(catatan_pembimbing, '')::TEXT AS catatan_pembimbing,
 			       COALESCE(status::TEXT, '')::TEXT AS status,
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
 			FROM kegiatan_ilmiah
@@ -129,6 +137,12 @@ func (r *KegiatanIlmiahRepoAdapter) UpdateStatus(ctx context.Context, id int, st
 	return err
 }
 
+func (r *KegiatanIlmiahRepoAdapter) UpdateStatusWithNote(ctx context.Context, id int, status string, catatan string) error {
+	query := `UPDATE kegiatan_ilmiah SET status = $1::status_kegiatan_enum, catatan_pembimbing = $3, updated_at = NOW() WHERE id = $2`
+	_, err := r.DB.ExecContext(ctx, query, status, id, catatan)
+	return err
+}
+
 // IsOwnedBySupervisor memeriksa apakah supervisor terkait adalah
 // pembimbing utama (pembimbing_1) pada kegiatan ilmiah tersebut.
 func (r *KegiatanIlmiahRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
@@ -146,12 +160,13 @@ type PendidikanEvaluasiRepoAdapter struct {
 
 func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status, supervisorName string) ([]PendidikanEvaluasiApprovalItem, error) {
 	query := `
-		SELECT id, user_username, jenis_evaluasi, tanggal, status, created_at
+		SELECT id, user_username, jenis_evaluasi, tanggal, revisi_catatan, status, created_at
 		FROM (
 			SELECT id,
 			       COALESCE(user_username, '')::TEXT AS user_username,
 			       COALESCE(jenis_evaluasi, '')::TEXT AS jenis_evaluasi,
 			       COALESCE(tanggal::TEXT, '')::TEXT AS tanggal,
+			       COALESCE(revisi_catatan, '')::TEXT AS revisi_catatan,
 			       COALESCE(status::TEXT, '')::TEXT AS status,
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
 			FROM pendidikan_evaluasis
@@ -176,6 +191,12 @@ func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status
 func (r *PendidikanEvaluasiRepoAdapter) UpdateStatus(ctx context.Context, id int, status string) error {
 	query := `UPDATE pendidikan_evaluasis SET status = $1::status_pendidikan_enum, updated_at = NOW() WHERE id = $2`
 	_, err := r.DB.ExecContext(ctx, query, status, id)
+	return err
+}
+
+func (r *PendidikanEvaluasiRepoAdapter) UpdateStatusWithNote(ctx context.Context, id int, status string, catatan string) error {
+	query := `UPDATE pendidikan_evaluasis SET status = $1::status_pendidikan_enum, revisi_catatan = $3, updated_at = NOW() WHERE id = $2`
+	_, err := r.DB.ExecContext(ctx, query, status, id, catatan)
 	return err
 }
 

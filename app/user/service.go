@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,10 +18,19 @@ type Service interface {
 	UpdateUser(ctx context.Context, id int, req UpdateUserRequest) (*UserResponse, error)
 	DeleteUser(ctx context.Context, id int) error
 
+	CheckUniqueCredentials(ctx context.Context, username string, email string) error
+
 	RegisterPPDS(ctx context.Context, req CreateRegistrationRequest, selfiePath, strPath, sipPath string) (*UserRegistrationResponse, error)
 	GetRegistrations(ctx context.Context, status string) ([]UserRegistrationResponse, error)
 	ApproveRegistration(ctx context.Context, id int) (*UserResponse, error)
 	RejectRegistration(ctx context.Context, id int, reason string) error
+
+	GetProfile(ctx context.Context, username string) (*UserProfileResponse, error)
+	UpdateProfile(ctx context.Context, username string, req UpdateProfileRequest) (*UserProfileResponse, error)
+	GetWorkHistories(ctx context.Context, username string) ([]WorkHistoryResponse, error)
+	CreateWorkHistory(ctx context.Context, username string, req CreateWorkHistoryRequest) (*WorkHistoryResponse, error)
+	UpdateWorkHistory(ctx context.Context, username string, id int, req CreateWorkHistoryRequest) (*WorkHistoryResponse, error)
+	DeleteWorkHistory(ctx context.Context, username string, id int) error
 }
 
 type service struct {
@@ -154,22 +164,27 @@ func (s *service) DeleteUser(ctx context.Context, id int) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *service) CheckUniqueCredentials(ctx context.Context, username string, email string) error {
+    // check username
+    if u, _ := s.repo.FindByUsername(ctx, username); u != nil {
+        return errors.New("username sudah digunakan")
+    }
+    // check email
+    if u, _ := s.repo.FindByEmail(ctx, email); u != nil {
+        return errors.New("email sudah terdaftar")
+    }
+    return nil
+}
+
 func (s *service) RegisterPPDS(ctx context.Context, req CreateRegistrationRequest, selfiePath, strPath, sipPath string) (*UserRegistrationResponse, error) {
 	// Validasi konfirmasi password
 	if req.Password != req.PasswordConfirmation {
 		return nil, errors.New("kata sandi dan konfirmasi kata sandi tidak cocok")
 	}
 
-	// Cek username belum dipakai
-	existingByUsername, _ := s.repo.FindByUsername(ctx, req.Username)
-	if existingByUsername != nil {
-		return nil, errors.New("username sudah digunakan oleh pengguna lain")
-	}
-
-	// Cek email belum dipakai
-	existingUser, _ := s.repo.FindByEmail(ctx, req.Email)
-	if existingUser != nil {
-		return nil, errors.New("email sudah terdaftar sebagai pengguna aktif")
+	// Periksa keunikan username dan email
+	if err := s.CheckUniqueCredentials(ctx, req.Username, req.Email); err != nil {
+		return nil, err
 	}
 
 	hashedPassword, err := utils.HashPasswordArgon2(req.Password)
@@ -310,4 +325,147 @@ func (s *service) RejectRegistration(ctx context.Context, id int, reason string)
 	}
 
 	return nil
+}
+
+// ------------------------- PROFILE (MASTER DATA) -------------------------
+
+func formatDatePtr(t sql.NullTime) string {
+	if !t.Valid {
+		return ""
+	}
+	return t.Time.Format("2006-01-02")
+}
+
+func toProfileResponse(u *User) *UserProfileResponse {
+	return &UserProfileResponse{
+		Username:         u.Username,
+		FullName:         u.Name,
+		EmailInstitution: u.Email,
+		Nik:              u.Nik,
+		NimNip:           u.NimNip,
+		ProgramStudi:     u.ProgramStudi,
+		BirthPlace:       u.BirthPlace,
+		BirthDate:        formatDatePtr(u.BirthDate),
+		Gender:           u.Gender,
+		BloodType:        u.BloodType,
+		Religion:         u.Religion,
+		University:       u.University,
+		Citizenship:      u.Citizenship,
+		EmailPersonal:    u.EmailPersonal,
+		PhoneMobile:      u.PhoneMobile,
+		PhoneHome:        u.PhoneHome,
+		AddressKtp:       u.AddressKtp,
+		AddressDomicile:  u.AddressDomicile,
+		StrNumber:        u.StrNumber,
+		StrIssued:        formatDatePtr(u.StrIssued),
+		StrExpired:       formatDatePtr(u.StrExpired),
+		StrNote:          u.StrNote,
+		Profession:       u.Profession,
+		Competency:       u.Competency,
+		College:          u.College,
+		Stage:            u.Stage,
+		Dpjp:             u.Dpjp,
+	}
+}
+
+func (s *service) GetProfile(ctx context.Context, username string) (*UserProfileResponse, error) {
+	u, err := s.repo.FindProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, errors.New("profil pengguna tidak ditemukan")
+	}
+	return toProfileResponse(u), nil
+}
+
+func (s *service) UpdateProfile(ctx context.Context, username string, req UpdateProfileRequest) (*UserProfileResponse, error) {
+	if strings.TrimSpace(req.FullName) == "" {
+		return nil, errors.New("nama lengkap wajib diisi")
+	}
+
+	if err := s.repo.UpdateProfile(ctx, username, req); err != nil {
+		return nil, errors.New("gagal memperbarui profil: " + err.Error())
+	}
+
+	u, err := s.repo.FindProfileByUsername(ctx, username)
+	if err != nil {
+		return nil, errors.New("profil pengguna tidak ditemukan")
+	}
+	return toProfileResponse(u), nil
+}
+
+// ------------------------- WORK HISTORY -------------------------
+
+func toWorkHistoryResponse(wh *WorkHistory) *WorkHistoryResponse {
+	startDate := ""
+	if wh.StartDate.Valid {
+		startDate = wh.StartDate.Time.Format("2006-01-02")
+	}
+	return &WorkHistoryResponse{
+		ID:          wh.ID,
+		Position:    wh.Position,
+		Institution: wh.Institution,
+		StartDate:   startDate,
+		Status:      wh.Status,
+		Sip:         wh.Sip,
+		Location:    wh.Location,
+	}
+}
+
+func (s *service) GetWorkHistories(ctx context.Context, username string) ([]WorkHistoryResponse, error) {
+	list, err := s.repo.FindWorkHistories(ctx, username)
+	if err != nil {
+		return []WorkHistoryResponse{}, err
+	}
+
+	res := []WorkHistoryResponse{}
+	for i := range list {
+		res = append(res, *toWorkHistoryResponse(&list[i]))
+	}
+	return res, nil
+}
+
+func (s *service) CreateWorkHistory(ctx context.Context, username string, req CreateWorkHistoryRequest) (*WorkHistoryResponse, error) {
+	wh := &WorkHistory{
+		UserUsername: username,
+		Position:     req.Position,
+		Institution:  req.Institution,
+		Status:       req.Status,
+		Sip:          req.Sip,
+		Location:     req.Location,
+	}
+	if strings.TrimSpace(wh.Status) == "" {
+		wh.Status = "Aktif"
+	}
+
+	if err := s.repo.CreateWorkHistory(ctx, wh); err != nil {
+		return nil, errors.New("gagal menambah riwayat pekerjaan: " + err.Error())
+	}
+	return toWorkHistoryResponse(wh), nil
+}
+
+func (s *service) UpdateWorkHistory(ctx context.Context, username string, id int, req CreateWorkHistoryRequest) (*WorkHistoryResponse, error) {
+	existing, err := s.repo.FindWorkHistoryByID(ctx, username, id)
+	if err != nil {
+		return nil, errors.New("riwayat pekerjaan tidak ditemukan")
+	}
+
+	existing.Position = req.Position
+	existing.Institution = req.Institution
+	existing.Status = req.Status
+	existing.Sip = req.Sip
+	existing.Location = req.Location
+	if strings.TrimSpace(existing.Status) == "" {
+		existing.Status = "Aktif"
+	}
+
+	if err := s.repo.UpdateWorkHistory(ctx, username, existing); err != nil {
+		return nil, errors.New("gagal memperbarui riwayat pekerjaan")
+	}
+	return toWorkHistoryResponse(existing), nil
+}
+
+func (s *service) DeleteWorkHistory(ctx context.Context, username string, id int) error {
+	if _, err := s.repo.FindWorkHistoryByID(ctx, username, id); err != nil {
+		return errors.New("riwayat pekerjaan tidak ditemukan")
+	}
+	return s.repo.DeleteWorkHistory(ctx, username, id)
 }

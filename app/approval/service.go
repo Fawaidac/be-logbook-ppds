@@ -11,14 +11,14 @@ type Service interface {
 	GetDitolak(ctx context.Context, supervisorName string) (*ApprovalListResponse, error)
 
 	ApproveTindakan(ctx context.Context, id int, supervisorName string) error
-	RejectTindakan(ctx context.Context, id int, supervisorName string) error
+	RejectTindakan(ctx context.Context, id int, supervisorName string, catatan string) error
 
 	ApproveKegiatanIlmiah(ctx context.Context, id int, supervisorName string) error
-	RejectKegiatanIlmiah(ctx context.Context, id int, supervisorName string) error
+	RejectKegiatanIlmiah(ctx context.Context, id int, supervisorName string, catatan string) error
 
 
 	ApprovePendidikanEvaluasi(ctx context.Context, id int, supervisorName string) error
-	RejectPendidikanEvaluasi(ctx context.Context, id int, supervisorName string) error
+	RejectPendidikanEvaluasi(ctx context.Context, id int, supervisorName string, catatan string) error
 }
 
 type service struct {
@@ -111,14 +111,14 @@ func (s *service) ApproveTindakan(ctx context.Context, id int, supervisorName st
 	return nil
 }
 
-func (s *service) RejectTindakan(ctx context.Context, id int, supervisorName string) error {
+func (s *service) RejectTindakan(ctx context.Context, id int, supervisorName string, catatan string) error {
 	if supervisorName != "" {
 		owned, err := s.tindakanRepo.IsOwnedBySupervisor(ctx, id, supervisorName)
 		if e := ensureSupervisorOwnership(owned, err); e != nil {
 			return e
 		}
 	}
-	if err := s.tindakanRepo.UpdateStatus(ctx, id, "ditolak"); err != nil {
+	if err := s.tindakanRepo.UpdateStatusWithNote(ctx, id, "ditolak", catatan); err != nil {
 		return errors.New("gagal menolak tindakan")
 	}
 	return nil
@@ -137,14 +137,14 @@ func (s *service) ApproveKegiatanIlmiah(ctx context.Context, id int, supervisorN
 	return nil
 }
 
-func (s *service) RejectKegiatanIlmiah(ctx context.Context, id int, supervisorName string) error {
+func (s *service) RejectKegiatanIlmiah(ctx context.Context, id int, supervisorName string, catatan string) error {
 	if supervisorName != "" {
 		owned, err := s.kegiatanRepo.IsOwnedBySupervisor(ctx, id, supervisorName)
 		if e := ensureSupervisorOwnership(owned, err); e != nil {
 			return e
 		}
 	}
-	if err := s.kegiatanRepo.UpdateStatus(ctx, id, "ditolak"); err != nil {
+	if err := s.kegiatanRepo.UpdateStatusWithNote(ctx, id, "ditolak", catatan); err != nil {
 		return errors.New("gagal menolak kegiatan ilmiah")
 	}
 	return nil
@@ -164,14 +164,14 @@ func (s *service) ApprovePendidikanEvaluasi(ctx context.Context, id int, supervi
 	return nil
 }
 
-func (s *service) RejectPendidikanEvaluasi(ctx context.Context, id int, supervisorName string) error {
+func (s *service) RejectPendidikanEvaluasi(ctx context.Context, id int, supervisorName string, catatan string) error {
 	if supervisorName != "" {
 		owned, err := s.pendidikanEvalRepo.IsOwnedBySupervisor(ctx, id, supervisorName)
 		if e := ensureSupervisorOwnership(owned, err); e != nil {
 			return e
 		}
 	}
-	if err := s.pendidikanEvalRepo.UpdateStatus(ctx, id, "Perlu Revisi"); err != nil {
+	if err := s.pendidikanEvalRepo.UpdateStatusWithNote(ctx, id, "Perlu Revisi", catatan); err != nil {
 		return errors.New("gagal menolak pendidikan evaluasi")
 	}
 	return nil

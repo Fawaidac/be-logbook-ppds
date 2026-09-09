@@ -49,8 +49,8 @@ func (h *Handler) GetIndex(c *gin.Context) {
 
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateKegiatanIlmiahRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Format input tidak valid")
+	if err := c.ShouldBind(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Format input tidak valid: "+err.Error())
 		return
 	}
 

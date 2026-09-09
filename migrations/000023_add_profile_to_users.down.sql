@@ -1,0 +1,25 @@
+DROP TABLE IF EXISTS user_work_histories;
+
+ALTER TABLE users
+    DROP COLUMN IF EXISTS dpjp,
+    DROP COLUMN IF EXISTS stage,
+    DROP COLUMN IF EXISTS college,
+    DROP COLUMN IF EXISTS competency,
+    DROP COLUMN IF EXISTS profession,
+    DROP COLUMN IF EXISTS str_note,
+    DROP COLUMN IF EXISTS str_expired,
+    DROP COLUMN IF EXISTS str_issued,
+    DROP COLUMN IF EXISTS str_number,
+    DROP COLUMN IF EXISTS address_domicile,
+    DROP COLUMN IF EXISTS address_ktp,
+    DROP COLUMN IF EXISTS phone_home,
+    DROP COLUMN IF EXISTS phone_mobile,
+    DROP COLUMN IF EXISTS email_personal,
+    DROP COLUMN IF EXISTS citizenship,
+    DROP COLUMN IF EXISTS university,
+    DROP COLUMN IF EXISTS religion,
+    DROP COLUMN IF EXISTS blood_type,
+    DROP COLUMN IF EXISTS gender,
+    DROP COLUMN IF EXISTS birth_date,
+    DROP COLUMN IF EXISTS birth_place,
+    DROP COLUMN IF EXISTS nik;

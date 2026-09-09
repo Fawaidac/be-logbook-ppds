@@ -108,6 +108,7 @@ func main() {
 		{
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/register", userHandler.Register)
+			authGroup.POST("/pre-register", userHandler.PreRegisterCheck)
 
 			protected := authGroup.Group("")
 			protected.Use(middleware.JWTMiddleware(cfg.JWTSecret))
@@ -129,6 +130,23 @@ func main() {
 			userGroup.GET("/:id", userHandler.FindByID)
 			userGroup.PUT("/:id", userHandler.Update)
 			userGroup.DELETE("/:id", userHandler.Delete)
+		}
+
+		// Profile / Master Data endpoints (user yang sedang login, khusus residen dari FE)
+		profileGroup := api.Group("/users/profile")
+		profileGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			profileGroup.GET("", userHandler.GetProfile)
+			profileGroup.PUT("", userHandler.UpdateProfile)
+		}
+
+		workHistoryGroup := api.Group("/users/work-histories")
+		workHistoryGroup.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+		{
+			workHistoryGroup.GET("", userHandler.GetWorkHistories)
+			workHistoryGroup.POST("", userHandler.CreateWorkHistory)
+			workHistoryGroup.PUT("/:id", userHandler.UpdateWorkHistory)
+			workHistoryGroup.DELETE("/:id", userHandler.DeleteWorkHistory)
 		}
 
 		// Jadwal Management Endpoints

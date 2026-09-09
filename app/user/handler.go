@@ -22,6 +22,29 @@ func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
+// PreRegisterCheck handles step‑1 validation: username/email uniqueness and password match.
+func (h *Handler) PreRegisterCheck(c *gin.Context) {
+	var req PreRegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Format input tidak valid: "+err.Error())
+		return
+	}
+
+	// Validate password confirmation
+	if req.Password != req.PasswordConfirmation {
+		response.Error(c, http.StatusBadRequest, "kata sandi dan konfirmasi kata sandi tidak cocok")
+		return
+	}
+
+	// Check username and email uniqueness via service
+	if err := h.service.CheckUniqueCredentials(c.Request.Context(), req.Username, req.Email); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Validasi berhasil, dapat melanjutkan ke langkah berikutnya", nil)
+}
+
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -193,7 +216,10 @@ func (h *Handler) RejectRegistration(c *gin.Context) {
 	}
 
 	var req RejectRegistrationRequest
-	_ = c.ShouldBind(&req)
+	if err := c.ShouldBind(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Format input tidak valid")
+		return
+	}
 
 	if err := h.service.RejectRegistration(c.Request.Context(), id, req.Reason); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
@@ -201,4 +227,109 @@ func (h *Handler) RejectRegistration(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Permintaan registrasi telah ditolak dan notifikasi email dikirim.", nil)
+}
+
+// ------------------------- PROFILE (MASTER DATA) -------------------------
+
+func (h *Handler) GetProfile(c *gin.Context) {
+	username := c.GetString("username")
+
+	profile, err := h.service.GetProfile(c.Request.Context(), username)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Berhasil mengambil profil", profile)
+}
+
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	username := c.GetString("username")
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBind(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Format input tidak valid")
+		return
+	}
+
+	profile, err := h.service.UpdateProfile(c.Request.Context(), username, req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Profil berhasil diperbarui", profile)
+}
+
+// ------------------------- WORK HISTORY (MASTER DATA) -------------------------
+
+func (h *Handler) GetWorkHistories(c *gin.Context) {
+	username := c.GetString("username")
+
+	list, err := h.service.GetWorkHistories(c.Request.Context(), username)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Berhasil mengambil riwayat pekerjaan", list)
+}
+
+func (h *Handler) CreateWorkHistory(c *gin.Context) {
+	username := c.GetString("username")
+
+	var req CreateWorkHistoryRequest
+	if err := c.ShouldBind(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Posisi dan institusi wajib diisi")
+		return
+	}
+
+	wh, err := h.service.CreateWorkHistory(c.Request.Context(), username, req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "Riwayat pekerjaan berhasil ditambahkan", wh)
+}
+
+func (h *Handler) UpdateWorkHistory(c *gin.Context) {
+	username := c.GetString("username")
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "ID tidak valid")
+		return
+	}
+
+	var req CreateWorkHistoryRequest
+	if err := c.ShouldBind(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Posisi dan institusi wajib diisi")
+		return
+	}
+
+	wh, err := h.service.UpdateWorkHistory(c.Request.Context(), username, id, req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Riwayat pekerjaan berhasil diperbarui", wh)
+}
+
+func (h *Handler) DeleteWorkHistory(c *gin.Context) {
+	username := c.GetString("username")
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "ID tidak valid")
+		return
+	}
+
+	if err := h.service.DeleteWorkHistory(c.Request.Context(), username, id); err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Riwayat pekerjaan berhasil dihapus", nil)
 }

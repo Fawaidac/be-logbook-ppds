@@ -395,9 +395,13 @@ func NewSeminarService(repo SeminarRepository) SeminarService {
 }
 
 func (s *seminarService) CreateSeminar(ctx context.Context, req CreateSeminarRequest, username string) (*SeminarResponse, error) {
+	judul := req.Judul
+	if judul == "" {
+		judul = "Seminar Ilmiah"
+	}
 	sem := &PendidikanSeminar{
 		UserUsername: sql.NullString{String: username, Valid: username != ""},
-		Judul:        sql.NullString{String: req.Judul, Valid: req.Judul != ""},
+		Judul:        sql.NullString{String: judul, Valid: true},
 		Jenis:        sql.NullString{String: req.Jenis, Valid: req.Jenis != ""},
 		Narasumber:   sql.NullString{String: req.Narasumber, Valid: req.Narasumber != ""},
 		Ruang:        sql.NullString{String: "Ruang Pertemuan Departemen", Valid: true},
@@ -469,10 +473,14 @@ func NewCbdService(repo CbdRepository) CbdService {
 }
 
 func (s *cbdService) CreateCbd(ctx context.Context, req CreateCbdRequest, username string) (*CbdResponse, error) {
+	topik := req.Topik
+	if topik == "" {
+		topik = "Diskusi Kasus Klinis"
+	}
 	c := &PendidikanCbd{
 		UserUsername: sql.NullString{String: username, Valid: username != ""},
 		Pasien:       sql.NullString{String: req.Pasien, Valid: req.Pasien != ""},
-		Topik:        sql.NullString{String: req.Topik, Valid: req.Topik != ""},
+		Topik:        sql.NullString{String: topik, Valid: true},
 		Kategori:     sql.NullString{String: req.Kategori, Valid: req.Kategori != ""},
 		Pembimbing:   sql.NullString{String: req.Pembimbing, Valid: req.Pembimbing != ""},
 		Kompleksitas: sql.NullString{String: "Sedang", Valid: true},

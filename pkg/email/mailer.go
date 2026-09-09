@@ -6,7 +6,7 @@ import (
 	"net/smtp"
 	"be-logbook-ppds/configs"
 )
-
+	
 type Mailer interface {
 	SendApprovalEmail(toEmail, recipientName, username, defaultPassword string) error
 	SendRejectionEmail(toEmail, recipientName, reason string) error

@@ -53,6 +53,10 @@ func formatDate(nt sql.NullTime) string {
 }
 
 func (s *service) CreateKegiatan(ctx context.Context, req CreateKegiatanIlmiahRequest, username, programStudi, ppdsName, nimNip string) (*KegiatanIlmiahResponse, error) {
+	lokasiTipe := req.LokasiTipe
+	if lokasiTipe == "" {
+		lokasiTipe = "rsds_fk_unair"
+	}
 	k := &KegiatanIlmiah{
 		UserUsername:   sql.NullString{String: username, Valid: username != ""},
 		ProgramStudi:   sql.NullString{String: programStudi, Valid: programStudi != ""},
@@ -63,7 +67,7 @@ func (s *service) CreateKegiatan(ctx context.Context, req CreateKegiatanIlmiahRe
 		Topik:          req.Topik,
 		TanggalMulai:   parseDate(req.TanggalMulai),
 		TanggalSelesai: parseDate(req.TanggalSelesai),
-		LokasiTipe:     req.LokasiTipe,
+		LokasiTipe:     lokasiTipe,
 		LokasiDetail:   sql.NullString{String: req.LokasiDetail, Valid: req.LokasiDetail != ""},
 		Sebagai:        sql.NullString{String: req.Sebagai, Valid: req.Sebagai != ""},
 		Pembimbing1:    sql.NullString{String: req.Pembimbing1, Valid: req.Pembimbing1 != ""},
@@ -202,8 +206,9 @@ func (s *service) toKegiatanResponse(k *KegiatanIlmiah) *KegiatanIlmiahResponse 
 		Penguji3:       k.Penguji3.String,
 		Penguji4:       k.Penguji4.String,
 		Penguji5:       k.Penguji5.String,
-		Deskripsi:      k.Deskripsi.String,
-		LampiranPath:   k.LampiranPath.String,
+		Deskripsi:         k.Deskripsi.String,
+		CatatanPembimbing: k.CatatanPembimbing.String,
+		LampiranPath:      k.LampiranPath.String,
 		Status:         k.Status,
 		CreatedAt:      k.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:      k.UpdatedAt.Format(time.RFC3339),

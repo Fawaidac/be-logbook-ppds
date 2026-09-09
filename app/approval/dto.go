@@ -26,23 +26,25 @@ type TindakanApprovalItem struct {
 	Kemandirian    string `db:"kemandirian" json:"kemandirian,omitempty"`
 	ClinicalNote   string `db:"clinical_note" json:"clinical_note,omitempty"`
 	SupervisorName string `db:"supervisor_name" json:"supervisor_name,omitempty"`
+	Feedback       string `db:"feedback" json:"feedback,omitempty"`
 	Status         string `db:"status" json:"status"`
 	CreatedAt      string `db:"created_at" json:"created_at,omitempty"`
 }
 
 type KegiatanApprovalItem struct {
-	ID            int    `db:"id" json:"id"`
-	UserUsername  string `db:"user_username" json:"user_username,omitempty"`
-	PPDSName      string `db:"ppds_name" json:"ppds_name,omitempty"`
-	Kategori      string `db:"kategori" json:"kategori"`
-	JenisKegiatan string `db:"jenis_kegiatan" json:"jenis_kegiatan,omitempty"`
-	Topik         string `db:"topik" json:"topik,omitempty"`
-	TanggalMulai  string `db:"tanggal_mulai" json:"tanggal_mulai,omitempty"`
-	LokasiTipe    string `db:"lokasi_tipe" json:"lokasi_tipe,omitempty"`
-	LokasiDetail  string `db:"lokasi_detail" json:"lokasi_detail,omitempty"`
-	Sebagai       string `db:"sebagai" json:"sebagai,omitempty"`
-	Status        string `db:"status" json:"status"`
-	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
+	ID               int    `db:"id" json:"id"`
+	UserUsername     string `db:"user_username" json:"user_username,omitempty"`
+	PPDSName         string `db:"ppds_name" json:"ppds_name,omitempty"`
+	Kategori         string `db:"kategori" json:"kategori"`
+	JenisKegiatan    string `db:"jenis_kegiatan" json:"jenis_kegiatan,omitempty"`
+	Topik            string `db:"topik" json:"topik,omitempty"`
+	TanggalMulai     string `db:"tanggal_mulai" json:"tanggal_mulai,omitempty"`
+	LokasiTipe       string `db:"lokasi_tipe" json:"lokasi_tipe,omitempty"`
+	LokasiDetail     string `db:"lokasi_detail" json:"lokasi_detail,omitempty"`
+	Sebagai          string `db:"sebagai" json:"sebagai,omitempty"`
+	CatatanPembimbing string `db:"catatan_pembimbing" json:"catatan_pembimbing,omitempty"`
+	Status           string `db:"status" json:"status"`
+	CreatedAt        string `db:"created_at" json:"created_at,omitempty"`
 }
 
 
@@ -51,8 +53,13 @@ type PendidikanEvaluasiApprovalItem struct {
 	UserUsername  string `db:"user_username" json:"user_username,omitempty"`
 	JenisEvaluasi string `db:"jenis_evaluasi" json:"jenis_evaluasi,omitempty"`
 	Tanggal       string `db:"tanggal" json:"tanggal,omitempty"`
+	RevisiCatatan string `db:"revisi_catatan" json:"revisi_catatan,omitempty"`
 	Status        string `db:"status" json:"status"`
 	CreatedAt     string `db:"created_at" json:"created_at,omitempty"`
+}
+
+type RejectRequest struct {
+	Catatan string `json:"catatan,omitempty" form:"catatan,omitempty"`
 }
 
 type ApprovalAction struct {
