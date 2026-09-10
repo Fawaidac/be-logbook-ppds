@@ -14,9 +14,6 @@ type TindakanRepoAdapter struct {
 }
 
 func (r *TindakanRepoAdapter) FindByStatus(ctx context.Context, status, supervisorName string) ([]TindakanApprovalItem, error) {
-	// supervisorName kosong = lihat semua (admin); jika terisi,
-	// hanya tindakan dengan DPJP yang memilih supervisor tsb (relasi 1 residen -> 1 supervisor).
-	// Subquery agar PostgreSQL mengembalikan tipe TEXT, bukan DATE/TIMESTAMP asli.
 	query := `
 		SELECT id, user_username, mr_number, visit_date, patient_name, gender, birth_date,
 		       division, diagnosis_label, procedure_code, plan_procedure, activity,
@@ -46,17 +43,21 @@ func (r *TindakanRepoAdapter) FindByStatus(ctx context.Context, status, supervis
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
 			FROM tindakans
 			WHERE status = $1::status_enum
-			  AND ($2 = '' OR supervisor_name = $2)
+			  AND (
+			    $2 = ''
+			    OR LOWER(TRIM(COALESCE(supervisor_name, ''))) = LOWER(TRIM($2))
+			    OR (LENGTH(TRIM($2)) >= 3 AND LOWER(TRIM(COALESCE(supervisor_name, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%')
+			    OR (LENGTH(TRIM(COALESCE(supervisor_name, ''))) >= 3 AND LOWER(TRIM($2)) ILIKE '%' || LOWER(TRIM(COALESCE(supervisor_name, ''))) || '%')
+			  )
 		) sub
 		ORDER BY created_at DESC
 	`
 
 	var items []TindakanApprovalItem
 	if err := r.DB.SelectContext(ctx, &items, query, status, supervisorName); err != nil && err != sql.ErrNoRows {
-		fmt.Printf("DEBUG FindByStatus error: %v\n", err)
+		fmt.Printf("DEBUG Tindakan FindByStatus error: %v\n", err)
 		return []TindakanApprovalItem{}, err
 	}
-	fmt.Printf("DEBUG FindByStatus: status=%s supervisor=%s rows=%d\n", status, supervisorName, len(items))
 
 	if items == nil {
 		items = []TindakanApprovalItem{}
@@ -77,50 +78,71 @@ func (r *TindakanRepoAdapter) UpdateStatusWithNote(ctx context.Context, id int, 
 	return err
 }
 
-// IsOwnedBySupervisor memeriksa apakah supervisor terkait adalah DPJP
-// yang dipilih pada tindakan tersebut.
 func (r *TindakanRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
 	var exists bool
-	err := r.DB.GetContext(ctx, &exists,
-		`SELECT EXISTS(SELECT 1 FROM tindakans WHERE id = $1 AND COALESCE(supervisor_name, '') = $2)`,
-		id, supervisorName)
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM tindakans
+			WHERE id = $1 AND (
+			    $2 = ''
+			    OR LOWER(TRIM(COALESCE(supervisor_name, ''))) = LOWER(TRIM($2))
+			    OR (LENGTH(TRIM($2)) >= 3 AND LOWER(TRIM(COALESCE(supervisor_name, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%')
+			    OR (LENGTH(TRIM(COALESCE(supervisor_name, ''))) >= 3 AND LOWER(TRIM($2)) ILIKE '%' || LOWER(TRIM(COALESCE(supervisor_name, ''))) || '%')
+			)
+		)`
+	err := r.DB.GetContext(ctx, &exists, query, id, supervisorName)
 	return exists, err
 }
 
 // KegiatanIlmiahRepoAdapter implements KegiatanIlmiahRepository
-// Nama tabel di migration adalah "kegiatan_ilmiah" (tanpa 's')
 type KegiatanIlmiahRepoAdapter struct {
 	DB *sqlx.DB
 }
 
 func (r *KegiatanIlmiahRepoAdapter) FindByStatus(ctx context.Context, status, supervisorName string) ([]KegiatanApprovalItem, error) {
-	// Subquery agar PostgreSQL mengembalikan tipe TEXT, bukan DATE/TIMESTAMP asli.
 	query := `
 		SELECT id, user_username, ppds_name, kategori, jenis_kegiatan, topik,
-		       tanggal_mulai, lokasi_tipe, lokasi_detail, sebagai, catatan_pembimbing, status, created_at
+		       tanggal_mulai, lokasi_tipe, lokasi_detail, sebagai, pembimbing_1, catatan_pembimbing, status, created_at
 		FROM (
 			SELECT id,
 			       COALESCE(user_username, '')::TEXT AS user_username,
 			       COALESCE(ppds_name, '')::TEXT AS ppds_name,
-			       COALESCE(kategori, '')::TEXT AS kategori,
+			       COALESCE(kategori::TEXT, '')::TEXT AS kategori,
 			       COALESCE(jenis_kegiatan, '')::TEXT AS jenis_kegiatan,
 			       COALESCE(topik, '')::TEXT AS topik,
 			       COALESCE(tanggal_mulai::TEXT, '')::TEXT AS tanggal_mulai,
-			       COALESCE(lokasi_tipe, '')::TEXT AS lokasi_tipe,
+			       COALESCE(lokasi_tipe::TEXT, '')::TEXT AS lokasi_tipe,
 			       COALESCE(lokasi_detail, '')::TEXT AS lokasi_detail,
 			       COALESCE(sebagai, '')::TEXT AS sebagai,
+			       COALESCE(pembimbing_1, '')::TEXT AS pembimbing_1,
 			       COALESCE(catatan_pembimbing, '')::TEXT AS catatan_pembimbing,
 			       COALESCE(status::TEXT, '')::TEXT AS status,
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
 			FROM kegiatan_ilmiah
 			WHERE status = $1::status_kegiatan_enum
-			  AND ($2 = '' OR COALESCE(pembimbing_1, '') = $2)
+			  AND (
+			    $2 = ''
+			    OR LOWER(TRIM(COALESCE(pembimbing_1, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_2, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_3, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_4, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_5, ''))) = LOWER(TRIM($2))
+			    OR (LENGTH(TRIM($2)) >= 3 AND (
+			         LOWER(TRIM(COALESCE(pembimbing_1, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_2, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_3, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_4, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_5, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			    ))
+			    OR (LENGTH(TRIM(COALESCE(pembimbing_1, ''))) >= 3 AND LOWER(TRIM($2)) ILIKE '%' || LOWER(TRIM(COALESCE(pembimbing_1, ''))) || '%')
+			  )
 		) sub
 		ORDER BY created_at DESC
 	`
 
 	var items []KegiatanApprovalItem
 	if err := r.DB.SelectContext(ctx, &items, query, status, supervisorName); err != nil && err != sql.ErrNoRows {
+		fmt.Printf("DEBUG KegiatanIlmiah FindByStatus error: %v\n", err)
 		return []KegiatanApprovalItem{}, err
 	}
 
@@ -143,13 +165,29 @@ func (r *KegiatanIlmiahRepoAdapter) UpdateStatusWithNote(ctx context.Context, id
 	return err
 }
 
-// IsOwnedBySupervisor memeriksa apakah supervisor terkait adalah
-// pembimbing utama (pembimbing_1) pada kegiatan ilmiah tersebut.
 func (r *KegiatanIlmiahRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
 	var exists bool
-	err := r.DB.GetContext(ctx, &exists,
-		`SELECT EXISTS(SELECT 1 FROM kegiatan_ilmiah WHERE id = $1 AND COALESCE(pembimbing_1, '') = $2)`,
-		id, supervisorName)
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM kegiatan_ilmiah
+			WHERE id = $1 AND (
+			    $2 = ''
+			    OR LOWER(TRIM(COALESCE(pembimbing_1, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_2, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_3, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_4, ''))) = LOWER(TRIM($2))
+			    OR LOWER(TRIM(COALESCE(pembimbing_5, ''))) = LOWER(TRIM($2))
+			    OR (LENGTH(TRIM($2)) >= 3 AND (
+			         LOWER(TRIM(COALESCE(pembimbing_1, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_2, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_3, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_4, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			      OR LOWER(TRIM(COALESCE(pembimbing_5, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%'
+			    ))
+			    OR (LENGTH(TRIM(COALESCE(pembimbing_1, ''))) >= 3 AND LOWER(TRIM($2)) ILIKE '%' || LOWER(TRIM(COALESCE(pembimbing_1, ''))) || '%')
+			)
+		)`
+	err := r.DB.GetContext(ctx, &exists, query, id, supervisorName)
 	return exists, err
 }
 
@@ -164,20 +202,26 @@ func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status
 		FROM (
 			SELECT id,
 			       COALESCE(user_username, '')::TEXT AS user_username,
-			       COALESCE(jenis_evaluasi, '')::TEXT AS jenis_evaluasi,
+			       COALESCE(NULLIF(nama, ''), NULLIF(jenis, ''), NULLIF(kategori, ''), '')::TEXT AS jenis_evaluasi,
 			       COALESCE(tanggal::TEXT, '')::TEXT AS tanggal,
 			       COALESCE(revisi_catatan, '')::TEXT AS revisi_catatan,
 			       COALESCE(status::TEXT, '')::TEXT AS status,
 			       COALESCE(created_at::TEXT, '')::TEXT AS created_at
-			FROM pendidikan_evaluasis
-			WHERE status = $1::status_pendidikan_enum
-			  AND ($2 = '' OR COALESCE(supervisor_name, '') = $2)
+			FROM pendidikan_evaluasi
+			WHERE status = $1
+			  AND (
+			    $2 = ''
+			    OR LOWER(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) = LOWER(TRIM($2))
+			    OR (LENGTH(TRIM($2)) >= 3 AND LOWER(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%')
+			    OR (LENGTH(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) >= 3 AND LOWER(TRIM($2)) ILIKE '%' || LOWER(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) || '%')
+			  )
 		) sub
 		ORDER BY created_at DESC
 	`
 
 	var items []PendidikanEvaluasiApprovalItem
 	if err := r.DB.SelectContext(ctx, &items, query, status, supervisorName); err != nil && err != sql.ErrNoRows {
+		fmt.Printf("DEBUG PendidikanEvaluasi FindByStatus error: %v\n", err)
 		return []PendidikanEvaluasiApprovalItem{}, err
 	}
 
@@ -189,22 +233,30 @@ func (r *PendidikanEvaluasiRepoAdapter) FindByStatus(ctx context.Context, status
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) UpdateStatus(ctx context.Context, id int, status string) error {
-	query := `UPDATE pendidikan_evaluasis SET status = $1::status_pendidikan_enum, updated_at = NOW() WHERE id = $2`
+	query := `UPDATE pendidikan_evaluasi SET status = $1, updated_at = NOW() WHERE id = $2`
 	_, err := r.DB.ExecContext(ctx, query, status, id)
 	return err
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) UpdateStatusWithNote(ctx context.Context, id int, status string, catatan string) error {
-	query := `UPDATE pendidikan_evaluasis SET status = $1::status_pendidikan_enum, revisi_catatan = $3, updated_at = NOW() WHERE id = $2`
+	query := `UPDATE pendidikan_evaluasi SET status = $1, revisi_catatan = $3, updated_at = NOW() WHERE id = $2`
 	_, err := r.DB.ExecContext(ctx, query, status, id, catatan)
 	return err
 }
 
 func (r *PendidikanEvaluasiRepoAdapter) IsOwnedBySupervisor(ctx context.Context, id int, supervisorName string) (bool, error) {
 	var exists bool
-	err := r.DB.GetContext(ctx, &exists,
-		`SELECT EXISTS(SELECT 1 FROM pendidikan_evaluasis WHERE id = $1 AND COALESCE(supervisor_name, '') = $2)`,
-		id, supervisorName)
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM pendidikan_evaluasi
+			WHERE id = $1 AND (
+			    $2 = ''
+			    OR LOWER(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) = LOWER(TRIM($2))
+			    OR (LENGTH(TRIM($2)) >= 3 AND LOWER(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) ILIKE '%' || LOWER(TRIM($2)) || '%')
+			    OR (LENGTH(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) >= 3 AND LOWER(TRIM($2)) ILIKE '%' || LOWER(TRIM(COALESCE(supervisor, evaluator, pembimbing, ''))) || '%')
+			)
+		)`
+	err := r.DB.GetContext(ctx, &exists, query, id, supervisorName)
 	return exists, err
 }
 

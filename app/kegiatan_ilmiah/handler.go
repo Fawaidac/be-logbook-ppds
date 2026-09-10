@@ -3,6 +3,7 @@ package kegiatan_ilmiah
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"be-logbook-ppds/pkg/response"
 
@@ -20,9 +21,12 @@ func NewHandler(service Service) *Handler {
 // Kegiatan Ilmiah Handlers
 func (h *Handler) GetIndex(c *gin.Context) {
 	username := ""
-	if val, exists := c.Get("username"); exists {
-		if u, ok := val.(string); ok {
-			username = u
+	role := c.GetString("role")
+	if role == "residen" {
+		if val, exists := c.Get("username"); exists {
+			if u, ok := val.(string); ok {
+				username = u
+			}
 		}
 	}
 
@@ -41,7 +45,15 @@ func (h *Handler) GetIndex(c *gin.Context) {
 	}
 
 	for _, entry := range entries {
-		kategorized[entry.Kategori] = append(kategorized[entry.Kategori], entry)
+		kat := strings.ToLower(strings.TrimSpace(entry.Kategori))
+		if kat == "seminar" {
+			kat = "simposium"
+		}
+		if _, ok := kategorized[kat]; ok {
+			kategorized[kat] = append(kategorized[kat], entry)
+		} else {
+			kategorized["ilmiah_lain"] = append(kategorized["ilmiah_lain"], entry)
+		}
 	}
 
 	response.Success(c, http.StatusOK, "Berhasil mengambil kegiatan ilmiah", kategorized)

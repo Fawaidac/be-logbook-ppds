@@ -32,19 +32,20 @@ type TindakanApprovalItem struct {
 }
 
 type KegiatanApprovalItem struct {
-	ID               int    `db:"id" json:"id"`
-	UserUsername     string `db:"user_username" json:"user_username,omitempty"`
-	PPDSName         string `db:"ppds_name" json:"ppds_name,omitempty"`
-	Kategori         string `db:"kategori" json:"kategori"`
-	JenisKegiatan    string `db:"jenis_kegiatan" json:"jenis_kegiatan,omitempty"`
-	Topik            string `db:"topik" json:"topik,omitempty"`
-	TanggalMulai     string `db:"tanggal_mulai" json:"tanggal_mulai,omitempty"`
-	LokasiTipe       string `db:"lokasi_tipe" json:"lokasi_tipe,omitempty"`
-	LokasiDetail     string `db:"lokasi_detail" json:"lokasi_detail,omitempty"`
-	Sebagai          string `db:"sebagai" json:"sebagai,omitempty"`
+	ID                int    `db:"id" json:"id"`
+	UserUsername      string `db:"user_username" json:"user_username,omitempty"`
+	PPDSName          string `db:"ppds_name" json:"ppds_name,omitempty"`
+	Kategori          string `db:"kategori" json:"kategori"`
+	JenisKegiatan     string `db:"jenis_kegiatan" json:"jenis_kegiatan,omitempty"`
+	Topik             string `db:"topik" json:"topik,omitempty"`
+	TanggalMulai      string `db:"tanggal_mulai" json:"tanggal_mulai,omitempty"`
+	LokasiTipe        string `db:"lokasi_tipe" json:"lokasi_tipe,omitempty"`
+	LokasiDetail      string `db:"lokasi_detail" json:"lokasi_detail,omitempty"`
+	Sebagai           string `db:"sebagai" json:"sebagai,omitempty"`
+	Pembimbing1       string `db:"pembimbing_1" json:"pembimbing_1,omitempty"`
 	CatatanPembimbing string `db:"catatan_pembimbing" json:"catatan_pembimbing,omitempty"`
-	Status           string `db:"status" json:"status"`
-	CreatedAt        string `db:"created_at" json:"created_at,omitempty"`
+	Status            string `db:"status" json:"status"`
+	CreatedAt         string `db:"created_at" json:"created_at,omitempty"`
 }
 
 
